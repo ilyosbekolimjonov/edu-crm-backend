@@ -6,6 +6,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { MentorModule } from './modules/mentor/mentor.module';
 import { CourseCategoryModule } from './modules/course-category/course-category.module';
 import { CourseModule } from './modules/course/course.module';
+import { PurchasedCourseModule } from './modules/purchased-course/purchased-course.module';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
@@ -16,6 +17,7 @@ import { ConfigModule } from '@nestjs/config';
         MentorModule,
         CourseCategoryModule,
         CourseModule,
+        PurchasedCourseModule,
     ],
     // controllers: [AppController],
     // providers: [AppService],
