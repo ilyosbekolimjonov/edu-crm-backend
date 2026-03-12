@@ -1,10 +1,25 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
+export class MyLogger extends ConsoleLogger {
+  private ignoreContexts = [
+    'RoutesResolver',
+    'RouterExplorer',
+    'InstanceLoader',
+  ];
+
+  log(message: string, context?: string) {
+    if (context && this.ignoreContexts.includes(context)) return;
+    super.log(message, context);
+  }
+}
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: new MyLogger(),
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
