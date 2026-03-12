@@ -41,6 +41,22 @@ enum ExamAnswer {
   variantD
 }
 
+enum WeekDays {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum GroupStatus {
+  ACTIVE
+  INACTIVE
+  FREEZE
+}
+
 model User {
   id                     Int      @id @default(autoincrement())
   phone                  String   @unique
@@ -55,17 +71,19 @@ model User {
   emailVerificationToken String?
   createdAt              DateTime @default(now())
 
-  Mentor       Mentor?
-  courses      Course[]             @relation("MentorCourses")
-  assigned     AssignedCourse[]
-  purchased    PurchasedCourse[]
-  ratings      Rating[]
-  lessonViews  LessonView[]
-  submissions  HomeworkSubmission[]
-  examResults  ExamResult[]
-  questions    Question[]
-  answers      QuestionAnswer[]
-  lastActivity LastActivity?
+  Mentor        Mentor?
+  courses       Course[]             @relation("MentorCourses")
+  assigned      AssignedCourse[]
+  purchased     PurchasedCourse[]
+  ratings       Rating[]
+  lessonViews   LessonView[]
+  submissions   HomeworkSubmission[]
+  examResults   ExamResult[]
+  questions     Question[]
+  answers       QuestionAnswer[]
+  lastActivity  LastActivity?
+  mentorGroups  Group[]              @relation("MentorGroups")
+  studentGroups StudentGroup[]
 }
 
 model Mentor {
@@ -116,6 +134,7 @@ model Course {
   ratings        Rating[]
   groups         LessonGroup[]
   questions      Question[]
+  classGroups    Group[]
 }
 
 model AssignedCourse {
@@ -304,4 +323,45 @@ model QuestionAnswer {
 
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Room {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  capacity  Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  groups Group[]
+}
+
+model Group {
+  id              Int         @id @default(autoincrement())
+  name            String      @unique
+  startDate       DateTime
+  startTime       String
+  durationMinutes Int         @default(90)
+  weekDays        WeekDays[]
+  status          GroupStatus @default(ACTIVE)
+  createdAt       DateTime    @default(now())
+  courseId        Int
+  mentorId        Int
+  roomId          Int
+
+  course        Course         @relation(fields: [courseId], references: [id])
+  mentor        User           @relation("MentorGroups", fields: [mentorId], references: [id])
+  room          Room           @relation(fields: [roomId], references: [id])
+  studentGroups StudentGroup[]
+}
+
+model StudentGroup {
+  userId   Int
+  groupId  Int
+  status   GroupStatus @default(ACTIVE)
+  joinedAt DateTime    @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([userId, groupId])
 }
