@@ -7,6 +7,12 @@ import { MentorModule } from './modules/mentor/mentor.module';
 import { CourseCategoryModule } from './modules/course-category/course-category.module';
 import { CourseModule } from './modules/course/course.module';
 import { PurchasedCourseModule } from './modules/purchased-course/purchased-course.module';
+import { RoomModule } from './modules/room/room.module';
+import { GroupModule } from './modules/group/group.module';
+import { LessonGroupModule } from './modules/lesson-group/lesson-group.module';
+import { LessonModule } from './modules/lesson/lesson.module';
+import { HomeworkModule } from './modules/homework/homework.module';
+import { HomeworkSubmissionModule } from './modules/homework-submission/homework-submission.module';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
@@ -18,6 +24,12 @@ import { ConfigModule } from '@nestjs/config';
         CourseCategoryModule,
         CourseModule,
         PurchasedCourseModule,
+        RoomModule,
+        GroupModule,
+        LessonGroupModule,
+        LessonModule,
+        HomeworkModule,
+        HomeworkSubmissionModule,
     ],
     // controllers: [AppController],
     // providers: [AppService],
