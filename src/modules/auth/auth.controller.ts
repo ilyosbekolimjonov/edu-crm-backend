@@ -51,6 +51,17 @@ export class AuthController {
         return this.authService.login(dto);
     }
 
+    @Get('users')
+    @UseGuards(AtGuard, RolesGuard)
+    @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Foydalanuvchilar ro\'yxati (ADMIN, SUPERADMIN)' })
+    @ApiQuery({ name: 'role', required: false, enum: UserRole })
+    @ApiResponse({ status: 200, description: 'Foydalanuvchilar ro\'yxati' })
+    getUsers(@Query('role') role?: UserRole) {
+        return this.authService.getUsers(role);
+    }
+
     @Get('verify-email')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ description: 'Email orqali yuborilgan link orqali hisobni faollashtirish', })

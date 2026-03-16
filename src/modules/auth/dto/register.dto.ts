@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength, } from 'class-validator';
+import { IsEmail, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min, MinLength, } from 'class-validator';
+import { Type } from 'class-transformer';
 import { UserRole } from '@prisma/client';
 
 export class RegisterDto {
@@ -40,4 +41,26 @@ export class RegisterDto {
     @IsOptional()
     @IsEnum([UserRole.ADMIN, UserRole.MENTOR, UserRole.ASSISTANT, UserRole.STUDENT], { message: "Noto'g'ri rol" })
     role?: UserRole;
+
+    @ApiPropertyOptional({ example: 'https://t.me/username', description: 'Mentor telegram havolasi' })
+    @IsOptional()
+    @IsString()
+    telegram?: string;
+
+    @ApiPropertyOptional({ example: 'https://linkedin.com/in/username', description: 'Mentor linkedin havolasi' })
+    @IsOptional()
+    @IsString()
+    linkedin?: string;
+
+    @ApiPropertyOptional({ example: 'Frontend va React bo\'yicha mentor', description: 'Mentor haqida qisqa ma\'lumot' })
+    @IsOptional()
+    @IsString()
+    about?: string;
+
+    @ApiPropertyOptional({ example: 3, description: 'Mentor tajribasi (yil)' })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(0)
+    experience?: number;
 }

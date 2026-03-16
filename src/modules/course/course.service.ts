@@ -100,7 +100,7 @@ export class CourseService {
                         image: true,
                         email: true,
                         Mentor: {
-                            select: { about: true, job: true, experience: true },
+                            select: { telegram: true, linkedin: true },
                         },
                     },
                 },

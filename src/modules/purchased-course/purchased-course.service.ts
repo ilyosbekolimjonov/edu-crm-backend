@@ -65,7 +65,7 @@ export class PurchasedCourseService {
                     select: {
                         id: true, name: true, about: true, banner: true, price: true, level: true,
                         category: { select: { id: true, name: true } },
-                        mentor: { select: { fullName: true, Mentor: { select: { about: true, job: true } } } },
+                        mentor: { select: { fullName: true, Mentor: { select: { telegram: true, linkedin: true } } } },
                     },
                 },
                 mentor: { select: { id: true, user: { select: { fullName: true } } } },
