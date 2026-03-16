@@ -91,7 +91,7 @@ export class GroupService {
             where: { id },
             include: {
                 course: { select: { id: true, name: true, level: true } },
-                mentor: { select: { id: true, fullName: true, Mentor: { select: { about: true, job: true } } } },
+                mentor: { select: { id: true, fullName: true, Mentor: { select: { telegram: true, linkedin: true } } } },
                 room: { select: { id: true, name: true, capacity: true } },
                 studentGroups: {
                     include: { user: { select: { id: true, fullName: true, phone: true, email: true } } },

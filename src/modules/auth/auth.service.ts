@@ -55,6 +55,18 @@ export class AuthService {
             },
         });
 
+        if ((dto.role ?? UserRole.STUDENT) === UserRole.MENTOR) {
+            await this.prisma.mentor.create({
+                data: {
+                    userId: user.id,
+                    about: dto.about,
+                    experience: dto.experience ?? 0,
+                    telegram: dto.telegram,
+                    linkedin: dto.linkedin,
+                },
+            });
+        }
+
         await this.mailService.sendVerificationEmail(user.email, verificationToken);
 
         return { message: `Foydalanuvchi yaratildi. Tasdiqlash linki ${user.email} ga yuborildi` };
@@ -81,6 +93,31 @@ export class AuthService {
         const tokens = await this.generateTokens(user.id, user.email, user.username, user.role);
         await this.updateRefreshToken(user.id, tokens.refreshToken);
         return tokens;
+    }
+
+    async getUsers(role?: UserRole) {
+        return this.prisma.user.findMany({
+            where: role ? { role } : undefined,
+            select: {
+                id: true,
+                fullName: true,
+                username: true,
+                email: true,
+                phone: true,
+                role: true,
+                isActive: true,
+                createdAt: true,
+                Mentor: {
+                    select: {
+                        about: true,
+                        experience: true,
+                        telegram: true,
+                        linkedin: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
     }
 
     async verifyEmail(token: string): Promise<{ message: string }> {

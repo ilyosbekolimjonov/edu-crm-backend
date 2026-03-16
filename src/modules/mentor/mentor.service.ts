@@ -41,15 +41,10 @@ export class MentorService {
             update: dto,
             create: {
                 userId,
-                experience: dto.experience ?? 0,
                 about: dto.about,
-                job: dto.job,
+                experience: dto.experience ?? 0,
                 telegram: dto.telegram,
-                instagram: dto.instagram,
                 linkedin: dto.linkedin,
-                facebook: dto.facebook,
-                github: dto.github,
-                website: dto.website,
             },
         });
 
