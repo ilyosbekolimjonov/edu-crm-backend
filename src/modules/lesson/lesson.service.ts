@@ -30,7 +30,12 @@ export class LessonService {
         this.checkMentorOwnership(group.course.mentorId, user);
 
         return this.prisma.lesson.create({
-            data: { name: dto.name, about: dto.about, video: dto.video, groupId: dto.groupId },
+            data: {
+                name: dto.name,
+                about: dto.about?.trim() || 'Tavsif keyin qo\'shiladi',
+                video: dto.video?.trim() || '-',
+                groupId: dto.groupId,
+            },
             include: { group: { select: { id: true, name: true } } },
         });
     }
