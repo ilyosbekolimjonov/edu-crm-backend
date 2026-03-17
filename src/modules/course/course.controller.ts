@@ -23,7 +23,7 @@ export class CourseController {
     @ApiOperation({ summary: 'Yangi kurs yaratish (ADMIN, SUPERADMIN)' })
     @ApiResponse({ status: 201, description: 'Kurs yaratildi' })
     @ApiResponse({ status: 400, description: 'Mentor MENTOR rolida emas' })
-    @ApiResponse({ status: 404, description: 'Kategoriya yoki Mentor topilmadi' })
+    @ApiResponse({ status: 404, description: 'Mentor topilmadi' })
     create(@Body() dto: CreateCourseDto) {
         return this.courseService.create(dto);
     }

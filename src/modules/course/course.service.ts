@@ -10,27 +10,30 @@ export class CourseService {
     constructor(private readonly prisma: PrismaService) { }
 
     async create(dto: CreateCourseDto) {
+        const existingCourse = await this.prisma.course.findFirst({
+            where: { name: { equals: dto.name, mode: 'insensitive' } },
+        });
+        if (existingCourse) {
+            throw new BadRequestException('Bu nomli kurs allaqachon mavjud');
+        }
+
         const mentor = await this.prisma.user.findUnique({ where: { id: dto.mentorId } });
         if (!mentor || mentor.role !== UserRole.MENTOR) {
             throw new BadRequestException('mentorId bo\'yicha foydalanuvchi topilmadi yoki MENTOR rolida emas');
         }
 
-        const category = await this.prisma.courseCategory.findUnique({ where: { id: dto.categoryId } });
-        if (!category) throw new NotFoundException('Kategoriya topilmadi');
-
         const course = await this.prisma.course.create({
             data: {
                 name: dto.name,
                 about: dto.about,
+                durationMinutes: dto.durationMinutes,
+                durationMonths: dto.durationMonths,
                 price: dto.price,
-                banner: dto.banner,
                 introVideo: dto.introVideo,
                 level: dto.level,
-                categoryId: dto.categoryId,
                 mentorId: dto.mentorId,
             },
             include: {
-                category: { select: { id: true, name: true } },
                 mentor: { select: { id: true, fullName: true, email: true } },
             },
         });
@@ -46,7 +49,6 @@ export class CourseService {
         const courses = await this.prisma.course.findMany({
             where: {
                 ...(published !== undefined && { published }),
-                ...(query.categoryId && { categoryId: query.categoryId }),
                 ...(query.level && { level: query.level }),
                 ...(query.mentorId && { mentorId: query.mentorId }),
                 ...(query.search && {
@@ -54,7 +56,6 @@ export class CourseService {
                 }),
             },
             include: {
-                category: { select: { id: true, name: true } },
                 mentor: { select: { id: true, fullName: true, image: true } },
                 ratings: { select: { rate: true } },
                 _count: { select: { purchased: true, groups: true } },
@@ -72,13 +73,13 @@ export class CourseService {
                 id: c.id,
                 name: c.name,
                 about: c.about,
+                durationMinutes: c.durationMinutes,
+                durationMonths: c.durationMonths,
                 price: c.price,
-                banner: c.banner,
                 introVideo: c.introVideo,
                 level: c.level,
                 published: c.published,
                 createdAt: c.createdAt,
-                category: c.category,
                 mentor: c.mentor,
                 studentCount: c._count.purchased,
                 groupCount: c._count.groups,
@@ -92,7 +93,6 @@ export class CourseService {
         const course = await this.prisma.course.findUnique({
             where: { id },
             include: {
-                category: true,
                 mentor: {
                     select: {
                         id: true,
@@ -153,16 +153,22 @@ export class CourseService {
             }
         }
 
-        if (dto.categoryId) {
-            const category = await this.prisma.courseCategory.findUnique({ where: { id: dto.categoryId } });
-            if (!category) throw new NotFoundException('Kategoriya topilmadi');
+        if (dto.name) {
+            const existingCourse = await this.prisma.course.findFirst({
+                where: {
+                    name: { equals: dto.name, mode: 'insensitive' },
+                    NOT: { id },
+                },
+            });
+            if (existingCourse) {
+                throw new BadRequestException('Bu nomli kurs allaqachon mavjud');
+            }
         }
 
         return this.prisma.course.update({
             where: { id },
             data: { ...dto, updatedAt: new Date() },
             include: {
-                category: { select: { id: true, name: true } },
                 mentor: { select: { id: true, fullName: true } },
             },
         });

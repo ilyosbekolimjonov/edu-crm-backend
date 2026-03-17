@@ -63,8 +63,7 @@ export class PurchasedCourseService {
             include: {
                 course: {
                     select: {
-                        id: true, name: true, about: true, banner: true, price: true, level: true,
-                        category: { select: { id: true, name: true } },
+                        id: true, name: true, about: true, price: true, level: true,
                         mentor: { select: { fullName: true, Mentor: { select: { telegram: true, linkedin: true } } } },
                     },
                 },

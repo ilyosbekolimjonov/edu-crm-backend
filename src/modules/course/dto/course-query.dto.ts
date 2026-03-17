@@ -4,13 +4,6 @@ import { Type } from 'class-transformer';
 import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class CourseQueryDto {
-    @ApiPropertyOptional({ description: 'Kategoriya ID bo\'yicha filter' })
-    @IsOptional()
-    @IsInt()
-    @Min(1)
-    @Type(() => Number)
-    categoryId?: number;
-
     @ApiPropertyOptional({ enum: CourseLevel, description: 'Daraja bo\'yicha filter' })
     @IsOptional()
     @IsEnum(CourseLevel)
