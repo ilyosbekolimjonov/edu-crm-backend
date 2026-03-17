@@ -24,6 +24,11 @@ export class UpdateUserDto {
     @IsString()
     phone?: string;
 
+    @ApiPropertyOptional({ example: '/uploads/users/user-123.png', description: 'Profil rasmi URL' })
+    @IsOptional()
+    @IsString()
+    image?: string;
+
     @ApiPropertyOptional({ example: 'newStrongPassword123' })
     @IsOptional()
     @IsString()

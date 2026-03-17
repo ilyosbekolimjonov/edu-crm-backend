@@ -1,6 +1,10 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Query, UseGuards, } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UseGuards, UseInterceptors, } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags, } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { existsSync, mkdirSync } from 'fs';
+import { extname, join } from 'path';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -16,6 +20,50 @@ import { UpdateUserDto } from './dto/update-user.dto';
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) { }
+
+    @Post('upload-image')
+    @UseGuards(AtGuard, RolesGuard)
+    @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+    @UseInterceptors(
+        FileInterceptor('file', {
+            storage: diskStorage({
+                destination: (_req, _file, cb) => {
+                    const uploadDir = join(process.cwd(), 'uploads', 'users');
+                    if (!existsSync(uploadDir)) {
+                        mkdirSync(uploadDir, { recursive: true });
+                    }
+                    cb(null, uploadDir);
+                },
+                filename: (_req, file, cb) => {
+                    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+                    cb(null, `user-${unique}${extname(file.originalname)}`);
+                },
+            }),
+            fileFilter: (_req, file, cb) => {
+                if (!file.mimetype.startsWith('image/')) {
+                    cb(new Error('Faqat rasm fayl yuklash mumkin'), false);
+                    return;
+                }
+                cb(null, true);
+            },
+            limits: { fileSize: 10 * 1024 * 1024 },
+        }),
+    )
+    @ApiBearerAuth()
+    @HttpCode(HttpStatus.CREATED)
+    @ApiOperation({ summary: 'Foydalanuvchi rasmi yuklash (ADMIN, SUPERADMIN)' })
+    @ApiResponse({ status: 201, description: 'Rasm yuklandi' })
+    uploadImage(@UploadedFile() file: any) {
+        if (!file) {
+            throw new BadRequestException('Rasm fayl yuborilmadi');
+        }
+
+        return {
+            imageUrl: `/uploads/users/${file.filename}`,
+            fileName: file.originalname,
+            size: file.size,
+        };
+    }
 
     @Post('register')
     @UseGuards(AtGuard, RolesGuard)

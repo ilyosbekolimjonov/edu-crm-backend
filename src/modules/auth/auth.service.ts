@@ -49,6 +49,7 @@ export class AuthService {
                 username: dto.username,
                 email: dto.email,
                 phone: dto.phone,
+                image: dto.image,
                 password: hashedPassword,
                 role: dto.role ?? UserRole.STUDENT,
                 isActive: false,
@@ -108,6 +109,7 @@ export class AuthService {
                 username: true,
                 email: true,
                 phone: true,
+                image: true,
                 role: true,
                 isActive: true,
                 createdAt: true,
@@ -176,6 +178,7 @@ export class AuthService {
             email: dto.email,
             phone: dto.phone,
             role: dto.role,
+            image: dto.image,
         };
 
         if (dto.password) {
@@ -196,6 +199,7 @@ export class AuthService {
                     username: true,
                     email: true,
                     phone: true,
+                    image: true,
                     role: true,
                     isActive: true,
                     createdAt: true,

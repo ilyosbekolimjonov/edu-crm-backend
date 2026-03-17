@@ -229,6 +229,17 @@ export class GroupService {
                 mentor: { select: { id: true, fullName: true } },
                 mentorAssignments: { include: { mentor: { select: { id: true, fullName: true } } } },
                 room: { select: { id: true, name: true, capacity: true } },
+                studentGroups: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                role: true,
+                                isActive: true,
+                            },
+                        },
+                    },
+                },
                 _count: { select: { studentGroups: true } },
             },
             orderBy: { createdAt: 'desc' },

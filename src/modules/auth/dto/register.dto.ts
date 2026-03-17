@@ -24,6 +24,11 @@ export class RegisterDto {
     @IsNotEmpty()
     phone: string;
 
+    @ApiPropertyOptional({ example: '/uploads/users/user-123.png', description: 'Profil rasmi URL' })
+    @IsOptional()
+    @IsString()
+    image?: string;
+
     @ApiProperty({ example: 'Secret@123', description: 'Parol (kamida 6 belgi)' })
     @IsString()
     @MinLength(6, { message: "Parol kamida 6 belgidan iborat bo'lishi kerak" })
