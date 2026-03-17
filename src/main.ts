@@ -26,7 +26,7 @@ async function bootstrap() {
   const port = Number(process.env.PORT) || 3000;
   const corsOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
-    : ['http://localhost:5173'];
+    : ['http://localhost:5173', 'https://getknowva.netlify.app'];
 
   app.enableCors({
     origin: corsOrigins,
