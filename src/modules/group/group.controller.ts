@@ -9,6 +9,8 @@ import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { GroupQueryDto } from './dto/group-query.dto';
 import { AddStudentDto } from './dto/add-student.dto';
+import { SetAttendanceDto } from './dto/set-attendance.dto';
+import { RemoveAttendanceDto } from './dto/remove-attendance.dto';
 
 @ApiTags('Groups')
 @Controller('groups')
@@ -105,5 +107,44 @@ export class GroupController {
     @ApiResponse({ status: 404, description: 'Guruh topilmadi' })
     remove(@Param('id', ParseIntPipe) id: number) {
         return this.service.remove(id);
+    }
+
+    @Get(':id/attendance')
+    @UseGuards(AtGuard, RolesGuard)
+    @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
+    @ApiBearerAuth()
+    @ApiParam({ name: 'id', type: Number })
+    @ApiOperation({ summary: 'Guruh davomatini oy bo\'yicha olish' })
+    getAttendance(
+        @Param('id', ParseIntPipe) groupId: number,
+        @Query('month') month?: string,
+    ) {
+        return this.service.getAttendance(groupId, month);
+    }
+
+    @Patch(':id/attendance')
+    @UseGuards(AtGuard, RolesGuard)
+    @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
+    @ApiBearerAuth()
+    @ApiParam({ name: 'id', type: Number })
+    @ApiOperation({ summary: 'Guruh davomatini belgilash' })
+    setAttendance(
+        @Param('id', ParseIntPipe) groupId: number,
+        @Body() dto: SetAttendanceDto,
+    ) {
+        return this.service.setAttendance(groupId, dto);
+    }
+
+    @Delete(':id/attendance')
+    @UseGuards(AtGuard, RolesGuard)
+    @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
+    @ApiBearerAuth()
+    @ApiParam({ name: 'id', type: Number })
+    @ApiOperation({ summary: 'Guruh davomat yozuvini o\'chirish' })
+    removeAttendance(
+        @Param('id', ParseIntPipe) groupId: number,
+        @Query() query: RemoveAttendanceDto,
+    ) {
+        return this.service.removeAttendance(groupId, query.userId, query.date);
     }
 }

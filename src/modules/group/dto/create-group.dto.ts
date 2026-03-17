@@ -21,6 +21,18 @@ export class CreateGroupDto {
     @Type(() => Number)
     mentorId: number;
 
+    @ApiPropertyOptional({
+        type: [Number],
+        description: 'Guruhga biriktiriladigan mentor userId ro\'yxati (mentorId ham shu ro\'yxatga qo\'shiladi)',
+        example: [2, 5],
+    })
+    @IsOptional()
+    @IsArray()
+    @Type(() => Number)
+    @IsInt({ each: true })
+    @Min(1, { each: true })
+    mentorIds?: number[];
+
     @ApiProperty({ example: 1, description: 'Xona ID' })
     @IsInt()
     @Min(1)
@@ -47,4 +59,16 @@ export class CreateGroupDto {
     @IsArray()
     @IsEnum(WeekDays, { each: true })
     weekDays: WeekDays[];
+
+    @ApiPropertyOptional({
+        type: [Number],
+        description: 'Guruhga biriktiriladigan talabalar userId ro\'yxati',
+        example: [11, 23],
+    })
+    @IsOptional()
+    @IsArray()
+    @Type(() => Number)
+    @IsInt({ each: true })
+    @Min(1, { each: true })
+    studentIds?: number[];
 }

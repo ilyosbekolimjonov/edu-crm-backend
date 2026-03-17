@@ -58,7 +58,7 @@ export class CourseService {
             include: {
                 mentor: { select: { id: true, fullName: true, image: true } },
                 ratings: { select: { rate: true } },
-                _count: { select: { purchased: true, groups: true } },
+                _count: { select: { purchased: true, classGroups: true } },
             },
             orderBy: { createdAt: 'desc' },
         });
@@ -82,7 +82,7 @@ export class CourseService {
                 createdAt: c.createdAt,
                 mentor: c.mentor,
                 studentCount: c._count.purchased,
-                groupCount: c._count.groups,
+                groupCount: c._count.classGroups,
                 averageRating: avgRating,
                 ratingCount: c.ratings.length,
             };
@@ -109,11 +109,11 @@ export class CourseService {
                     orderBy: { createdAt: 'desc' },
                     take: 10,
                 },
-                groups: {
+                classGroups: {
                     select: {
                         id: true,
                         name: true,
-                        _count: { select: { lessons: true } },
+                        _count: { select: { studentGroups: true, lessons: true } },
                     },
                     orderBy: { createdAt: 'asc' },
                 },
@@ -130,7 +130,7 @@ export class CourseService {
                 )
                 : 0;
 
-        return { ...course, averageRating: avgRating };
+        return { ...course, groups: course.classGroups, averageRating: avgRating };
     }
 
 

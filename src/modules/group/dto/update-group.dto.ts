@@ -16,6 +16,24 @@ export class UpdateGroupDto {
     @Type(() => Number)
     mentorId?: number;
 
+    @ApiPropertyOptional({
+        type: [Number],
+        description: 'Guruhga biriktiriladigan mentor userId ro\'yxati',
+    })
+    @IsOptional()
+    @IsArray()
+    @Type(() => Number)
+    @IsInt({ each: true })
+    @Min(1, { each: true })
+    mentorIds?: number[];
+
+    @ApiPropertyOptional({ example: 3 })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    @Type(() => Number)
+    courseId?: number;
+
     @ApiPropertyOptional({ example: 2 })
     @IsOptional()
     @IsInt()
@@ -50,4 +68,15 @@ export class UpdateGroupDto {
     @IsOptional()
     @IsEnum(GroupStatus)
     status?: GroupStatus;
+
+    @ApiPropertyOptional({
+        type: [Number],
+        description: 'Guruhdagi student userId ro\'yxatini editor orqali sinxronlash uchun',
+    })
+    @IsOptional()
+    @IsArray()
+    @Type(() => Number)
+    @IsInt({ each: true })
+    @Min(1, { each: true })
+    studentIds?: number[];
 }
