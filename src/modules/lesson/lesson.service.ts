@@ -10,13 +10,13 @@ import type { JwtPayload } from '../../common/types/jwt-payload.type';
 export class LessonService {
     constructor(private readonly prisma: PrismaService) { }
 
-    private async getLessonGroupWithCourse(lessonGroupId: number) {
-        const lg = await this.prisma.lessonGroup.findUnique({
-            where: { id: lessonGroupId },
+    private async getGroupWithCourse(groupId: number) {
+        const group = await this.prisma.group.findUnique({
+            where: { id: groupId },
             include: { course: { select: { mentorId: true } } },
         });
-        if (!lg) throw new NotFoundException('Bo\'lim topilmadi');
-        return lg;
+        if (!group) throw new NotFoundException('Guruh topilmadi');
+        return group;
     }
 
     private checkMentorOwnership(mentorId: number, user: JwtPayload) {
@@ -26,8 +26,8 @@ export class LessonService {
     }
 
     async create(dto: CreateLessonDto, user: JwtPayload) {
-        const lg = await this.getLessonGroupWithCourse(dto.groupId);
-        this.checkMentorOwnership(lg.course.mentorId, user);
+        const group = await this.getGroupWithCourse(dto.groupId);
+        this.checkMentorOwnership(group.course.mentorId, user);
 
         return this.prisma.lesson.create({
             data: { name: dto.name, about: dto.about, video: dto.video, groupId: dto.groupId },
@@ -36,7 +36,7 @@ export class LessonService {
     }
 
     async findByGroup(lessonGroupId: number, userId: number) {
-        await this.getLessonGroupWithCourse(lessonGroupId);
+        await this.getGroupWithCourse(lessonGroupId);
         const lessons = await this.prisma.lesson.findMany({
             where: { groupId: lessonGroupId },
             include: {

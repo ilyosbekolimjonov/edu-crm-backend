@@ -83,7 +83,9 @@ model User {
   answers       QuestionAnswer[]
   lastActivity  LastActivity?
   mentorGroups  Group[]              @relation("MentorGroups")
+  assistingGroups GroupMentor[]
   studentGroups StudentGroup[]
+  attendances   GroupAttendance[]
 }
 
 model Mentor {
@@ -118,7 +120,6 @@ model Course {
   assigned       AssignedCourse[]
   purchased      PurchasedCourse[]
   ratings        Rating[]
-  groups         LessonGroup[]
   questions      Question[]
   classGroups    Group[]
 }
@@ -170,23 +171,10 @@ model LastActivity {
   groupId   Int?
   lessonId  String?
 
-  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course?      @relation(fields: [courseId], references: [id])
-  group  LessonGroup? @relation(fields: [groupId], references: [id])
-  lesson Lesson?      @relation(fields: [lessonId], references: [id])
-}
-
-model LessonGroup {
-  id        Int      @id @default(autoincrement())
-  name      String
-  createdAt DateTime @default(now())
-  courseId  Int
-
-  course         Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lessons        Lesson[]
-  exams          Exam[]
-  results        ExamResult[]
-  lastActivities LastActivity[]
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course? @relation(fields: [courseId], references: [id])
+  group  Group?  @relation(fields: [groupId], references: [id])
+  lesson Lesson? @relation(fields: [lessonId], references: [id])
 }
 
 model Lesson {
@@ -198,7 +186,7 @@ model Lesson {
   updatedAt DateTime?
   groupId   Int
 
-  group          LessonGroup    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  group          Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
   files          LessonFile[]
   homework       Homework?
   views          LessonView[]
@@ -265,7 +253,7 @@ model Exam {
   createdAt DateTime   @default(now())
 
   lessonGroupId Int
-  lessonGroup   LessonGroup @relation(fields: [lessonGroupId], references: [id], onDelete: Cascade)
+  lessonGroup   Group @relation(fields: [lessonGroupId], references: [id], onDelete: Cascade)
 }
 
 model ExamResult {
@@ -277,7 +265,7 @@ model ExamResult {
   lessonGroupId Int
   userId        Int
 
-  lessonGroup LessonGroup @relation(fields: [lessonGroupId], references: [id], onDelete: Cascade)
+  lessonGroup Group @relation(fields: [lessonGroupId], references: [id], onDelete: Cascade)
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -337,7 +325,39 @@ model Group {
   course        Course         @relation(fields: [courseId], references: [id])
   mentor        User           @relation("MentorGroups", fields: [mentorId], references: [id])
   room          Room           @relation(fields: [roomId], references: [id])
+  lessons       Lesson[]
+  exams         Exam[]
+  results       ExamResult[]
+  lastActivities LastActivity[]
+  mentorAssignments GroupMentor[]
   studentGroups StudentGroup[]
+  attendances   GroupAttendance[]
+}
+
+model GroupMentor {
+  groupId    Int
+  mentorId   Int
+  assignedAt DateTime @default(now())
+
+  group  Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  mentor User  @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, mentorId])
+}
+
+model GroupAttendance {
+  id         Int      @id @default(autoincrement())
+  groupId    Int
+  userId     Int
+  lessonDate DateTime
+  present    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId, lessonDate])
 }
 
 model StudentGroup {

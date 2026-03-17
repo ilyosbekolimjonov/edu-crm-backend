@@ -18,7 +18,7 @@ export class CreateLessonDto {
     @IsNotEmpty()
     video: string;
 
-    @ApiProperty({ example: 1, description: 'LessonGroup ID' })
+    @ApiProperty({ example: 1, description: 'Group ID' })
     @IsInt()
     @Min(1)
     @Type(() => Number)
