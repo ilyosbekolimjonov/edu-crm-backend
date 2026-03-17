@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UseGuards, } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Query, UseGuards, } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags, } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { AuthService } from './auth.service';
@@ -10,6 +10,7 @@ import { AtGuard } from './guards/at.guard';
 import { RtGuard } from './guards/rt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { JwtPayloadWithRt } from '../../common/types/jwt-payload.type';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -60,6 +61,38 @@ export class AuthController {
     @ApiResponse({ status: 200, description: 'Foydalanuvchilar ro\'yxati' })
     getUsers(@Query('role') role?: UserRole) {
         return this.authService.getUsers(role);
+    }
+
+    @Patch('users/:id')
+    @UseGuards(AtGuard, RolesGuard)
+    @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Foydalanuvchini tahrirlash (ADMIN, SUPERADMIN)' })
+    @ApiResponse({ status: 200, description: 'Foydalanuvchi yangilandi' })
+    @ApiResponse({ status: 404, description: 'Foydalanuvchi topilmadi' })
+    updateUser(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() dto: UpdateUserDto,
+        @GetCurrentUser('sub') currentUserId: number,
+        @GetCurrentUser('role') currentUserRole: UserRole,
+    ) {
+        return this.authService.updateUser(id, dto, currentUserId, currentUserRole);
+    }
+
+    @Delete('users/:id')
+    @UseGuards(AtGuard, RolesGuard)
+    @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+    @ApiBearerAuth()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Foydalanuvchini o\'chirish (ADMIN, SUPERADMIN)' })
+    @ApiResponse({ status: 200, description: 'Foydalanuvchi o\'chirildi' })
+    @ApiResponse({ status: 404, description: 'Foydalanuvchi topilmadi' })
+    removeUser(
+        @Param('id', ParseIntPipe) id: number,
+        @GetCurrentUser('sub') currentUserId: number,
+        @GetCurrentUser('role') currentUserRole: UserRole,
+    ) {
+        return this.authService.removeUser(id, currentUserId, currentUserRole);
     }
 
     @Get('verify-email')

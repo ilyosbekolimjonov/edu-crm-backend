@@ -4,7 +4,6 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { MentorModule } from './modules/mentor/mentor.module';
-import { CourseCategoryModule } from './modules/course-category/course-category.module';
 import { CourseModule } from './modules/course/course.module';
 import { PurchasedCourseModule } from './modules/purchased-course/purchased-course.module';
 import { RoomModule } from './modules/room/room.module';
@@ -21,7 +20,6 @@ import { ConfigModule } from '@nestjs/config';
         PrismaModule,
         AuthModule,
         MentorModule,
-        CourseCategoryModule,
         CourseModule,
         PurchasedCourseModule,
         RoomModule,

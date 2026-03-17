@@ -57,7 +57,6 @@ export class MentorService {
             include: {
                 ratings: { select: { rate: true } },
                 _count: { select: { purchased: true } },
-                category: { select: { name: true } },
             },
             orderBy: { createdAt: 'desc' },
         });
@@ -75,7 +74,6 @@ export class MentorService {
                 price: course.price,
                 level: course.level,
                 published: course.published,
-                category: course.category.name,
                 studentCount: course._count.purchased,
                 averageRating: parseFloat(avgRating.toFixed(1)),
                 ratingCount: totalRatings,
