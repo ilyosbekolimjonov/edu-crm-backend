@@ -1,6 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { join } from 'path';
+import express from 'express';
 import { AppModule } from './app.module';
 
 export class MyLogger extends ConsoleLogger {
@@ -30,6 +32,8 @@ async function bootstrap() {
     origin: corsOrigins,
     credentials: true,
   });
+
+  app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
   app.useGlobalPipes(
     new ValidationPipe({

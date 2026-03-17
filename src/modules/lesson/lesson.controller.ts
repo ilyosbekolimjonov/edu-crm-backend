@@ -1,6 +1,10 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { AtGuard } from '../auth/guards/at.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -14,6 +18,52 @@ import type { JwtPayload } from '../../common/types/jwt-payload.type';
 @ApiTags('Lessons')
 @Controller('lessons')
 export class LessonController {
+        @Post(':id/files/upload')
+        @UseGuards(AtGuard, RolesGuard)
+        @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
+        @UseInterceptors(
+            FileInterceptor('file', {
+                storage: diskStorage({
+                    destination: (_req, _file, cb) => {
+                        const uploadDir = join(process.cwd(), 'uploads', 'videos');
+                        if (!existsSync(uploadDir)) {
+                            mkdirSync(uploadDir, { recursive: true });
+                        }
+                        cb(null, uploadDir);
+                    },
+                    filename: (_req, file, cb) => {
+                        const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+                        cb(null, `video-${unique}${extname(file.originalname)}`);
+                    },
+                }),
+                fileFilter: (_req, file, cb) => {
+                    if (!file.mimetype.startsWith('video/')) {
+                        cb(new Error('Faqat video fayl yuklash mumkin'), false);
+                        return;
+                    }
+                    cb(null, true);
+                },
+                limits: { fileSize: 1024 * 1024 * 1024 },
+            }),
+        )
+        @ApiBearerAuth()
+        @HttpCode(HttpStatus.CREATED)
+        @ApiParam({ name: 'id', type: String })
+        @ApiOperation({ summary: 'Darsga video yuklab biriktirish (ADMIN, SUPERADMIN, MENTOR)' })
+        @ApiResponse({ status: 201, description: 'Video yuklandi va biriktirildi' })
+        uploadVideo(
+            @Param('id') id: string,
+            @UploadedFile() file: any,
+            @Body('note') note: string | undefined,
+            @GetCurrentUser() user: JwtPayload,
+        ) {
+            if (!file) {
+                throw new BadRequestException('Video fayl yuborilmadi');
+            }
+            const fileUrl = `/uploads/videos/${file.filename}`;
+            return this.service.addFile(id, { file: fileUrl, note }, user);
+        }
+
     constructor(private readonly service: LessonService) { }
 
     @Post()

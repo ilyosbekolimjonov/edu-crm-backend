@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateLessonDto {
     @ApiProperty({ example: '1-dars: O\'zgaruvchilar' })
@@ -8,15 +8,15 @@ export class CreateLessonDto {
     @IsNotEmpty()
     name: string;
 
-    @ApiProperty({ example: 'Bu darsda o\'zgaruvchilar haqida gaplashamiz' })
+    @ApiPropertyOptional({ example: 'Bu darsda o\'zgaruvchilar haqida gaplashamiz' })
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
-    about: string;
+    about?: string;
 
-    @ApiProperty({ example: 'https://youtube.com/watch?v=xyz', description: 'Video URL' })
+    @ApiPropertyOptional({ example: 'https://youtube.com/watch?v=xyz', description: 'Video URL' })
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
-    video: string;
+    video?: string;
 
     @ApiProperty({ example: 1, description: 'Group ID' })
     @IsInt()
