@@ -4,9 +4,9 @@ import { CourseController } from './course.controller';
 import { CourseService } from './course.service';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [CourseController],
-    providers: [CourseService],
-    exports: [CourseService],
+  imports: [PrismaModule],
+  controllers: [CourseController],
+  providers: [CourseService],
+  exports: [CourseService],
 })
-export class CourseModule { }
+export class CourseModule {}

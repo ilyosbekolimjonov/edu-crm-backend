@@ -4,8 +4,8 @@ import { HomeworkSubmissionService } from './homework-submission.service';
 import { HomeworkSubmissionController } from './homework-submission.controller';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [HomeworkSubmissionController],
-    providers: [HomeworkSubmissionService],
+  imports: [PrismaModule],
+  controllers: [HomeworkSubmissionController],
+  providers: [HomeworkSubmissionService],
 })
-export class HomeworkSubmissionModule { }
+export class HomeworkSubmissionModule {}

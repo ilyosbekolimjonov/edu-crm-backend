@@ -12,18 +12,18 @@ import { HomeworkSubmissionModule } from './modules/homework-submission/homework
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
-    imports: [
-        ConfigModule.forRoot({ isGlobal: true }),
-        PrismaModule,
-        AuthModule,
-        MentorModule,
-        CourseModule,
-        PurchasedCourseModule,
-        RoomModule,
-        GroupModule,
-        LessonModule,
-        HomeworkModule,
-        HomeworkSubmissionModule,
-    ],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    AuthModule,
+    MentorModule,
+    CourseModule,
+    PurchasedCourseModule,
+    RoomModule,
+    GroupModule,
+    LessonModule,
+    HomeworkModule,
+    HomeworkSubmissionModule,
+  ],
 })
-export class AppModule { }
+export class AppModule {}
