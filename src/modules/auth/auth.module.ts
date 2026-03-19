@@ -10,9 +10,9 @@ import { RtStrategy } from './strategies/rt.strategy';
 import { RolesGuard } from '../../common/guards/roles.guard';
 
 @Module({
-    imports: [PrismaModule, PassportModule, JwtModule.register({}),],
-    controllers: [AuthController],
-    providers: [AuthService, MailService, AtStrategy, RtStrategy, RolesGuard,],
-    exports: [AuthService, AtStrategy, RtStrategy, RolesGuard],
+  imports: [PrismaModule, PassportModule, JwtModule.register({})],
+  controllers: [AuthController],
+  providers: [AuthService, MailService, AtStrategy, RtStrategy, RolesGuard],
+  exports: [AuthService, AtStrategy, RtStrategy, RolesGuard],
 })
-export class AuthModule { }
+export class AuthModule {}

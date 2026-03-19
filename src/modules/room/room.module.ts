@@ -4,8 +4,8 @@ import { RoomService } from './room.service';
 import { RoomController } from './room.controller';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [RoomController],
-    providers: [RoomService],
+  imports: [PrismaModule],
+  controllers: [RoomController],
+  providers: [RoomService],
 })
-export class RoomModule { }
+export class RoomModule {}

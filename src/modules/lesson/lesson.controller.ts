@@ -1,8 +1,32 @@
-import { BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import type { Express } from 'express';
 import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { AtGuard } from '../auth/guards/at.guard';
@@ -18,151 +42,171 @@ import type { JwtPayload } from '../../common/types/jwt-payload.type';
 @ApiTags('Lessons')
 @Controller('lessons')
 export class LessonController {
-        @Post(':id/files/upload')
-        @UseGuards(AtGuard, RolesGuard)
-        @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
-        @UseInterceptors(
-            FileInterceptor('file', {
-                storage: diskStorage({
-                    destination: (_req, _file, cb) => {
-                        const uploadDir = join(process.cwd(), 'uploads', 'videos');
-                        if (!existsSync(uploadDir)) {
-                            mkdirSync(uploadDir, { recursive: true });
-                        }
-                        cb(null, uploadDir);
-                    },
-                    filename: (_req, file, cb) => {
-                        const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-                        cb(null, `video-${unique}${extname(file.originalname)}`);
-                    },
-                }),
-                fileFilter: (_req, file, cb) => {
-                    if (!file.mimetype.startsWith('video/')) {
-                        cb(new Error('Faqat video fayl yuklash mumkin'), false);
-                        return;
-                    }
-                    cb(null, true);
-                },
-                limits: { fileSize: 1024 * 1024 * 1024 },
-            }),
-        )
-        @ApiBearerAuth()
-        @HttpCode(HttpStatus.CREATED)
-        @ApiParam({ name: 'id', type: String })
-        @ApiOperation({ summary: 'Darsga video yuklab biriktirish (ADMIN, SUPERADMIN, MENTOR)' })
-        @ApiResponse({ status: 201, description: 'Video yuklandi va biriktirildi' })
-        uploadVideo(
-            @Param('id') id: string,
-            @UploadedFile() file: any,
-            @Body('note') note: string | undefined,
-            @GetCurrentUser() user: JwtPayload,
-        ) {
-            if (!file) {
-                throw new BadRequestException('Video fayl yuborilmadi');
-            }
-            const fileUrl = `/uploads/videos/${file.filename}`;
-            return this.service.addFile(id, { file: fileUrl, note }, user);
+  @Post(':id/files/upload')
+  @UseGuards(AtGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          const uploadDir = join(process.cwd(), 'uploads', 'videos');
+          if (!existsSync(uploadDir)) {
+            mkdirSync(uploadDir, { recursive: true });
+          }
+          cb(null, uploadDir);
+        },
+        filename: (_req, file, cb) => {
+          const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+          cb(null, `video-${unique}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (_req, file, cb) => {
+        if (!file.mimetype.startsWith('video/')) {
+          cb(new Error('Faqat video fayl yuklash mumkin'), false);
+          return;
         }
-
-    constructor(private readonly service: LessonService) { }
-
-    @Post()
-    @UseGuards(AtGuard, RolesGuard)
-    @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
-    @ApiBearerAuth()
-    @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Yangi dars yaratish (ADMIN, SUPERADMIN, MENTOR — o\'z kursi)' })
-    @ApiResponse({ status: 201, description: 'Dars yaratildi' })
-    @ApiResponse({ status: 403, description: 'Bu kurs sizniki emas' })
-    @ApiResponse({ status: 404, description: 'Bo\'lim topilmadi' })
-    create(@Body() dto: CreateLessonDto, @GetCurrentUser() user: JwtPayload) {
-        return this.service.create(dto, user);
+        cb(null, true);
+      },
+      limits: { files: 1, fileSize: 1024 * 1024 * 1024 },
+    }),
+  )
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiParam({ name: 'id', type: String })
+  @ApiOperation({
+    summary: 'Darsga video yuklab biriktirish (ADMIN, SUPERADMIN, MENTOR)',
+  })
+  @ApiResponse({ status: 201, description: 'Video yuklandi va biriktirildi' })
+  uploadVideo(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body('note') note: string | undefined,
+    @GetCurrentUser() user: JwtPayload,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Video fayl yuborilmadi');
     }
+    const fileUrl = `/uploads/videos/${file.filename}`;
+    return this.service.addFile(id, { file: fileUrl, note }, user);
+  }
 
-    @Get()
-    @UseGuards(AtGuard)
-    @ApiBearerAuth()
-    @ApiQuery({ name: 'lessonGroupId', required: true, type: Number })
-    @ApiOperation({ summary: 'Bo\'lim darslar ro\'yxati (ko\'rilganlik holati bilan)' })
-    @ApiResponse({ status: 200, description: 'Ro\'yxat' })
-    findByGroup(
-        @Query('lessonGroupId', ParseIntPipe) lessonGroupId: number,
-        @GetCurrentUser('sub') userId: number,
-    ) {
-        return this.service.findByGroup(lessonGroupId, userId);
-    }
+  constructor(private readonly service: LessonService) {}
 
-    @Get(':id')
-    @UseGuards(AtGuard)
-    @ApiBearerAuth()
-    @ApiParam({ name: 'id', type: String })
-    @ApiOperation({ summary: 'Dars tafsiloti (fayllar, homework, ko\'rilganlik)' })
-    @ApiResponse({ status: 200, description: 'Dars tafsiloti' })
-    @ApiResponse({ status: 404, description: 'Dars topilmadi' })
-    findOne(@Param('id') id: string, @GetCurrentUser('sub') userId: number) {
-        return this.service.findOne(id, userId);
-    }
+  @Post()
+  @UseGuards(AtGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: "Yangi dars yaratish (ADMIN, SUPERADMIN, MENTOR — o'z kursi)",
+  })
+  @ApiResponse({ status: 201, description: 'Dars yaratildi' })
+  @ApiResponse({ status: 403, description: 'Bu kurs sizniki emas' })
+  @ApiResponse({ status: 404, description: "Bo'lim topilmadi" })
+  create(@Body() dto: CreateLessonDto, @GetCurrentUser() user: JwtPayload) {
+    return this.service.create(dto, user);
+  }
 
-    @Patch(':id')
-    @UseGuards(AtGuard, RolesGuard)
-    @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
-    @ApiBearerAuth()
-    @ApiParam({ name: 'id', type: String })
-    @ApiOperation({ summary: 'Darsni tahrirlash (ADMIN, SUPERADMIN, MENTOR — o\'z kursi)' })
-    @ApiResponse({ status: 200, description: 'Yangilandi' })
-    update(@Param('id') id: string, @Body() dto: UpdateLessonDto, @GetCurrentUser() user: JwtPayload) {
-        return this.service.update(id, dto, user);
-    }
+  @Get()
+  @UseGuards(AtGuard)
+  @ApiBearerAuth()
+  @ApiQuery({ name: 'lessonGroupId', required: true, type: Number })
+  @ApiOperation({
+    summary: "Bo'lim darslar ro'yxati (ko'rilganlik holati bilan)",
+  })
+  @ApiResponse({ status: 200, description: "Ro'yxat" })
+  findByGroup(
+    @Query('lessonGroupId', ParseIntPipe) lessonGroupId: number,
+    @GetCurrentUser('sub') userId: number,
+  ) {
+    return this.service.findByGroup(lessonGroupId, userId);
+  }
 
-    @Delete(':id')
-    @UseGuards(AtGuard, RolesGuard)
-    @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
-    @ApiBearerAuth()
-    @HttpCode(HttpStatus.OK)
-    @ApiParam({ name: 'id', type: String })
-    @ApiOperation({ summary: 'Darsni o\'chirish (ADMIN, SUPERADMIN, MENTOR — o\'z kursi)' })
-    @ApiResponse({ status: 200, description: 'O\'chirildi' })
-    remove(@Param('id') id: string, @GetCurrentUser() user: JwtPayload) {
-        return this.service.remove(id, user);
-    }
+  @Get(':id')
+  @UseGuards(AtGuard)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', type: String })
+  @ApiOperation({ summary: "Dars tafsiloti (fayllar, homework, ko'rilganlik)" })
+  @ApiResponse({ status: 200, description: 'Dars tafsiloti' })
+  @ApiResponse({ status: 404, description: 'Dars topilmadi' })
+  findOne(@Param('id') id: string, @GetCurrentUser('sub') userId: number) {
+    return this.service.findOne(id, userId);
+  }
 
-    @Post(':id/files')
-    @UseGuards(AtGuard, RolesGuard)
-    @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
-    @ApiBearerAuth()
-    @HttpCode(HttpStatus.CREATED)
-    @ApiParam({ name: 'id', type: String })
-    @ApiOperation({ summary: 'Darsga fayl qo\'shish (ADMIN, SUPERADMIN, MENTOR)' })
-    @ApiResponse({ status: 201, description: 'Fayl qo\'shildi' })
-    addFile(@Param('id') id: string, @Body() dto: AddLessonFileDto, @GetCurrentUser() user: JwtPayload) {
-        return this.service.addFile(id, dto, user);
-    }
+  @Patch(':id')
+  @UseGuards(AtGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', type: String })
+  @ApiOperation({
+    summary: "Darsni tahrirlash (ADMIN, SUPERADMIN, MENTOR — o'z kursi)",
+  })
+  @ApiResponse({ status: 200, description: 'Yangilandi' })
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateLessonDto,
+    @GetCurrentUser() user: JwtPayload,
+  ) {
+    return this.service.update(id, dto, user);
+  }
 
-    @Delete(':id/files/:fileId')
-    @UseGuards(AtGuard, RolesGuard)
-    @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
-    @ApiBearerAuth()
-    @HttpCode(HttpStatus.OK)
-    @ApiParam({ name: 'id', type: String })
-    @ApiParam({ name: 'fileId', type: Number })
-    @ApiOperation({ summary: 'Dars faylini o\'chirish (ADMIN, SUPERADMIN, MENTOR)' })
-    @ApiResponse({ status: 200, description: 'O\'chirildi' })
-    removeFile(
-        @Param('id') id: string,
-        @Param('fileId', ParseIntPipe) fileId: number,
-        @GetCurrentUser() user: JwtPayload,
-    ) {
-        return this.service.removeFile(id, fileId, user);
-    }
+  @Delete(':id')
+  @UseGuards(AtGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'id', type: String })
+  @ApiOperation({
+    summary: "Darsni o'chirish (ADMIN, SUPERADMIN, MENTOR — o'z kursi)",
+  })
+  @ApiResponse({ status: 200, description: "O'chirildi" })
+  remove(@Param('id') id: string, @GetCurrentUser() user: JwtPayload) {
+    return this.service.remove(id, user);
+  }
 
-    @Patch(':id/view')
-    @UseGuards(AtGuard)
-    @ApiBearerAuth()
-    @HttpCode(HttpStatus.OK)
-    @ApiParam({ name: 'id', type: String })
-    @ApiOperation({ summary: 'Darsni ko\'rilgan deb belgilash' })
-    @ApiResponse({ status: 200, description: 'Belgilandi' })
-    markViewed(@Param('id') id: string, @GetCurrentUser('sub') userId: number) {
-        return this.service.markViewed(id, userId);
-    }
+  @Post(':id/files')
+  @UseGuards(AtGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiParam({ name: 'id', type: String })
+  @ApiOperation({ summary: "Darsga fayl qo'shish (ADMIN, SUPERADMIN, MENTOR)" })
+  @ApiResponse({ status: 201, description: "Fayl qo'shildi" })
+  addFile(
+    @Param('id') id: string,
+    @Body() dto: AddLessonFileDto,
+    @GetCurrentUser() user: JwtPayload,
+  ) {
+    return this.service.addFile(id, dto, user);
+  }
+
+  @Delete(':id/files/:fileId')
+  @UseGuards(AtGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'id', type: String })
+  @ApiParam({ name: 'fileId', type: Number })
+  @ApiOperation({
+    summary: "Dars faylini o'chirish (ADMIN, SUPERADMIN, MENTOR)",
+  })
+  @ApiResponse({ status: 200, description: "O'chirildi" })
+  removeFile(
+    @Param('id') id: string,
+    @Param('fileId', ParseIntPipe) fileId: number,
+    @GetCurrentUser() user: JwtPayload,
+  ) {
+    return this.service.removeFile(id, fileId, user);
+  }
+
+  @Patch(':id/view')
+  @UseGuards(AtGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'id', type: String })
+  @ApiOperation({ summary: "Darsni ko'rilgan deb belgilash" })
+  @ApiResponse({ status: 200, description: 'Belgilandi' })
+  markViewed(@Param('id') id: string, @GetCurrentUser('sub') userId: number) {
+    return this.service.markViewed(id, userId);
+  }
 }

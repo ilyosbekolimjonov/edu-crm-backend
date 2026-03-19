@@ -4,8 +4,8 @@ import { LessonService } from './lesson.service';
 import { LessonController } from './lesson.controller';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [LessonController],
-    providers: [LessonService],
+  imports: [PrismaModule],
+  controllers: [LessonController],
+  providers: [LessonService],
 })
-export class LessonModule { }
+export class LessonModule {}

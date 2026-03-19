@@ -23,7 +23,6 @@ async function bootstrap() {
     logger: new MyLogger(),
   });
 
-  const port = Number(process.env.PORT) || 3000;
   const corsOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
     : ['http://localhost:5173', 'https://getknowva.netlify.app'];
@@ -53,8 +52,12 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(port);
-  console.log(`🚀 Server ishga tushdi: http://localhost:${port}`);
-  console.log(`📄 Swagger: http://localhost:${port}/api/docs`);
+  await app.listen(process.env.PORT ?? 3000);
+  console.log(
+    `🚀 Server ishga tushdi: http://localhost:${process.env.PORT ?? 3000}`,
+  );
+  console.log(
+    `📄 Swagger: http://localhost:${process.env.PORT ?? 3000}/api/docs`,
+  );
 }
-bootstrap();
+void bootstrap();
