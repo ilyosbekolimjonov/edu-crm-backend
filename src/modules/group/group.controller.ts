@@ -23,6 +23,8 @@ import { UserRole } from '@prisma/client';
 import { AtGuard } from '../auth/guards/at.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { GetCurrentUser } from '../../common/decorators/get-current-user.decorator';
+import type { JwtPayload } from '../../common/types/jwt-payload.type';
 import { GroupService } from './group.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
@@ -30,6 +32,7 @@ import { GroupQueryDto } from './dto/group-query.dto';
 import { AddStudentDto } from './dto/add-student.dto';
 import { SetAttendanceDto } from './dto/set-attendance.dto';
 import { RemoveAttendanceDto } from './dto/remove-attendance.dto';
+import { BulkAttendanceDto } from './dto/bulk-attendance.dto';
 
 @ApiTags('Groups')
 @Controller('groups')
@@ -59,8 +62,8 @@ export class GroupController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Guruhlar ro'yxati (ADMIN, SUPERADMIN, MENTOR)" })
   @ApiResponse({ status: 200, description: "Ro'yxat" })
-  findAll(@Query() query: GroupQueryDto) {
-    return this.service.findAll(query);
+  findAll(@Query() query: GroupQueryDto, @GetCurrentUser() user: JwtPayload) {
+    return this.service.findAll(query, user);
   }
 
   @Get(':id')
@@ -74,8 +77,11 @@ export class GroupController {
   })
   @ApiResponse({ status: 200, description: 'Guruh tafsiloti' })
   @ApiResponse({ status: 404, description: 'Guruh topilmadi' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.service.findOne(id);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @GetCurrentUser() user: JwtPayload,
+  ) {
+    return this.service.findOne(id, user);
   }
 
   @Patch(':id')
@@ -148,9 +154,24 @@ export class GroupController {
   @ApiOperation({ summary: "Guruh davomatini oy bo'yicha olish" })
   getAttendance(
     @Param('id', ParseIntPipe) groupId: number,
+    @GetCurrentUser() user: JwtPayload,
     @Query('month') month?: string,
   ) {
-    return this.service.getAttendance(groupId, month);
+    return this.service.getAttendance(groupId, month, user);
+  }
+
+  @Patch(':id/attendance/bulk')
+  @UseGuards(AtGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOperation({ summary: 'Guruh davomatini bulk saqlash' })
+  bulkSaveAttendance(
+    @Param('id', ParseIntPipe) groupId: number,
+    @Body() dto: BulkAttendanceDto,
+    @GetCurrentUser() user: JwtPayload,
+  ) {
+    return this.service.bulkSaveAttendance(groupId, dto, user);
   }
 
   @Patch(':id/attendance')
@@ -162,8 +183,9 @@ export class GroupController {
   setAttendance(
     @Param('id', ParseIntPipe) groupId: number,
     @Body() dto: SetAttendanceDto,
+    @GetCurrentUser() user: JwtPayload,
   ) {
-    return this.service.setAttendance(groupId, dto);
+    return this.service.setAttendance(groupId, dto, user);
   }
 
   @Delete(':id/attendance')
@@ -175,7 +197,8 @@ export class GroupController {
   removeAttendance(
     @Param('id', ParseIntPipe) groupId: number,
     @Query() query: RemoveAttendanceDto,
+    @GetCurrentUser() user: JwtPayload,
   ) {
-    return this.service.removeAttendance(groupId, query.userId, query.date);
+    return this.service.removeAttendance(groupId, query.userId, query.date, user);
   }
 }

@@ -9,6 +9,7 @@ import { GroupModule } from './modules/group/group.module';
 import { LessonModule } from './modules/lesson/lesson.module';
 import { HomeworkModule } from './modules/homework/homework.module';
 import { HomeworkSubmissionModule } from './modules/homework-submission/homework-submission.module';
+import { StudentModule } from './modules/student/student.module';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
@@ -24,6 +25,7 @@ import { ConfigModule } from '@nestjs/config';
     LessonModule,
     HomeworkModule,
     HomeworkSubmissionModule,
+    StudentModule,
   ],
 })
 export class AppModule {}

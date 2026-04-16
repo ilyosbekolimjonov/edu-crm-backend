@@ -28,6 +28,7 @@ export class AddLessonFileDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MinLength(2)
   @MaxLength(255)
   note?: string;

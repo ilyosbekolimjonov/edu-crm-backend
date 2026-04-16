@@ -18,7 +18,12 @@ export class HomeworkService {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
       include: {
-        group: { include: { course: { select: { mentorId: true } } } },
+        group: {
+          include: {
+            course: { select: { mentorId: true } },
+            mentorAssignments: { select: { mentorId: true } },
+          },
+        },
       },
     });
     if (!lesson) throw new NotFoundException('Dars topilmadi');
@@ -31,7 +36,12 @@ export class HomeworkService {
       include: {
         lesson: {
           include: {
-            group: { include: { course: { select: { mentorId: true } } } },
+            group: {
+              include: {
+                course: { select: { mentorId: true } },
+                mentorAssignments: { select: { mentorId: true } },
+              },
+            },
           },
         },
       },
@@ -40,15 +50,29 @@ export class HomeworkService {
     return hw;
   }
 
-  private checkMentorOwnership(mentorId: number, user: JwtPayload) {
-    if (user.role === UserRole.MENTOR && mentorId !== user.sub) {
+  private checkMentorGroupAccess(
+    group: {
+      mentorId: number;
+      mentorAssignments?: { mentorId: number }[];
+    },
+    user: JwtPayload,
+  ) {
+    if (user.role !== UserRole.MENTOR) return;
+
+    const allowed =
+      group.mentorId === user.sub ||
+      (group.mentorAssignments ?? []).some(
+        (item) => item.mentorId === user.sub,
+      );
+
+    if (!allowed) {
       throw new ForbiddenException('Bu kurs sizniki emas');
     }
   }
 
   async create(dto: CreateHomeworkDto, user: JwtPayload) {
     const lesson = await this.getLessonWithCourse(dto.lessonId);
-    this.checkMentorOwnership(lesson.group.course.mentorId, user);
+    this.checkMentorGroupAccess(lesson.group, user);
 
     const exists = await this.prisma.homework.findUnique({
       where: { lessonId: dto.lessonId },
@@ -81,7 +105,7 @@ export class HomeworkService {
 
   async update(id: number, dto: UpdateHomeworkDto, user: JwtPayload) {
     const hw = await this.getHomeworkWithCourse(id);
-    this.checkMentorOwnership(hw.lesson.group.course.mentorId, user);
+    this.checkMentorGroupAccess(hw.lesson.group, user);
 
     return this.prisma.homework.update({
       where: { id },
@@ -91,7 +115,7 @@ export class HomeworkService {
 
   async remove(id: number, user: JwtPayload) {
     const hw = await this.getHomeworkWithCourse(id);
-    this.checkMentorOwnership(hw.lesson.group.course.mentorId, user);
+    this.checkMentorGroupAccess(hw.lesson.group, user);
 
     await this.prisma.homework.delete({ where: { id } });
     return { message: "Topshiriq o'chirildi" };

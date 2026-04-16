@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { HomeworkSubStatus, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { ReviewSubmissionDto } from './dto/review-submission.dto';
@@ -12,7 +12,9 @@ import { SubmissionQueryDto } from './dto/submission-query.dto';
 import type { JwtPayload } from '../../common/types/jwt-payload.type';
 
 const submissionInclude = {
-  user: { select: { id: true, fullName: true, email: true, phone: true } },
+  user: {
+    select: { id: true, fullName: true, email: true, phone: true, image: true },
+  },
   homework: {
     select: {
       id: true,
@@ -34,9 +36,51 @@ const submissionInclude = {
   },
 };
 
+const formatSubmission = (submission: any) => ({
+  id: submission.id,
+  homeworkId: submission.homeworkId,
+  userId: submission.userId,
+  studentId: submission.userId,
+  studentFullName: submission.user?.fullName,
+  student: submission.user,
+  user: submission.user,
+  content: submission.text,
+  text: submission.text,
+  fileUrl: submission.file,
+  file: submission.file,
+  status: submission.status,
+  score: submission.score,
+  comment: submission.comment ?? submission.reason,
+  reason: submission.reason,
+  checkedBy: submission.checkedBy,
+  createdAt: submission.createdAt,
+  updatedAt: submission.updatedAt,
+  homework: submission.homework,
+});
+
 @Injectable()
 export class HomeworkSubmissionService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private checkMentorGroupAccess(
+    group: {
+      mentorId: number;
+      mentorAssignments?: { mentorId: number }[];
+    },
+    user: JwtPayload,
+  ) {
+    if (user.role !== UserRole.MENTOR) return;
+
+    const allowed =
+      group.mentorId === user.sub ||
+      (group.mentorAssignments ?? []).some(
+        (item) => item.mentorId === user.sub,
+      );
+
+    if (!allowed) {
+      throw new ForbiddenException('Bu kurs sizniki emas');
+    }
+  }
 
   async submit(dto: CreateSubmissionDto, user: JwtPayload) {
     const homework = await this.prisma.homework.findUnique({
@@ -50,7 +94,7 @@ export class HomeworkSubmissionService {
     if (existing)
       throw new ConflictException('Siz bu topshiriqni allaqachon yuborgansiz');
 
-    return this.prisma.homeworkSubmission.create({
+    const submission = await this.prisma.homeworkSubmission.create({
       data: {
         homeworkId: dto.homeworkId,
         userId: user.sub,
@@ -59,6 +103,7 @@ export class HomeworkSubmissionService {
       },
       include: submissionInclude,
     });
+    return formatSubmission(submission);
   }
 
   async findAll(query: SubmissionQueryDto, user: JwtPayload) {
@@ -70,19 +115,88 @@ export class HomeworkSubmissionService {
 
     if (user.role === UserRole.MENTOR) {
       where.homework = {
-        lesson: { group: { course: { mentorId: user.sub } } },
+        lesson: {
+          group: {
+            OR: [
+              { mentorId: user.sub },
+              { mentorAssignments: { some: { mentorId: user.sub } } },
+            ],
+          },
+        },
       };
     }
 
-    return this.prisma.homeworkSubmission.findMany({
+    const submissions = await this.prisma.homeworkSubmission.findMany({
       where,
       include: submissionInclude,
       orderBy: { createdAt: 'desc' },
     });
+    return submissions.map(formatSubmission);
+  }
+
+  async findByHomework(homeworkId: number, user: JwtPayload) {
+    const homework = await this.prisma.homework.findUnique({
+      where: { id: homeworkId },
+      include: {
+        lesson: {
+          include: {
+            group: {
+              include: {
+                course: { select: { id: true, name: true, mentorId: true } },
+                mentorAssignments: { select: { mentorId: true } },
+              },
+            },
+          },
+        },
+        submissions: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phone: true,
+                image: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    if (!homework) throw new NotFoundException('Topshiriq topilmadi');
+
+    if (user.role === UserRole.MENTOR) {
+      this.checkMentorGroupAccess(homework.lesson.group, user);
+    }
+
+    return {
+      homework: {
+        id: homework.id,
+        title: homework.task,
+        task: homework.task,
+        file: homework.file,
+        fileUrl: homework.file,
+        createdAt: homework.createdAt,
+        updatedAt: homework.updatedAt,
+      },
+      lesson: {
+        id: homework.lesson.id,
+        title: homework.lesson.name,
+        name: homework.lesson.name,
+        group: {
+          id: homework.lesson.group.id,
+          name: homework.lesson.group.name,
+          course: homework.lesson.group.course,
+        },
+      },
+      submissions: homework.submissions.map(formatSubmission),
+    };
   }
 
   async findMy(user: JwtPayload) {
-    return this.prisma.homeworkSubmission.findMany({
+    const submissions = await this.prisma.homeworkSubmission.findMany({
       where: { userId: user.sub },
       include: {
         homework: {
@@ -95,6 +209,7 @@ export class HomeworkSubmissionService {
       },
       orderBy: { createdAt: 'desc' },
     });
+    return submissions.map(formatSubmission);
   }
 
   async findOne(id: number, user: JwtPayload) {
@@ -109,12 +224,18 @@ export class HomeworkSubmissionService {
     }
 
     if (user.role === UserRole.MENTOR) {
-      const mentorId = submission.homework.lesson.group.course.mentorId;
-      if (mentorId !== user.sub)
-        throw new ForbiddenException('Bu kurs sizniki emas');
+      const group = await this.prisma.group.findUnique({
+        where: { id: submission.homework.lesson.group.id },
+        select: {
+          mentorId: true,
+          mentorAssignments: { select: { mentorId: true } },
+        },
+      });
+      if (!group) throw new NotFoundException('Guruh topilmadi');
+      this.checkMentorGroupAccess(group, user);
     }
 
-    return submission;
+    return formatSubmission(submission);
   }
 
   async review(id: number, dto: ReviewSubmissionDto, user: JwtPayload) {
@@ -125,7 +246,12 @@ export class HomeworkSubmissionService {
           include: {
             lesson: {
               include: {
-                group: { include: { course: { select: { mentorId: true } } } },
+                group: {
+                  include: {
+                    course: { select: { mentorId: true } },
+                    mentorAssignments: { select: { mentorId: true } },
+                  },
+                },
               },
             },
           },
@@ -134,25 +260,22 @@ export class HomeworkSubmissionService {
     });
     if (!submission) throw new NotFoundException('Topshirilma topilmadi');
 
-    if (submission.status !== HomeworkSubStatus.PENDING) {
-      throw new ConflictException('Bu topshirilma allaqachon tekshirilgan');
-    }
-
     if (user.role === UserRole.MENTOR) {
-      const mentorId = submission.homework.lesson.group.course.mentorId;
-      if (mentorId !== user.sub)
-        throw new ForbiddenException('Bu kurs sizniki emas');
+      this.checkMentorGroupAccess(submission.homework.lesson.group, user);
     }
 
-    return this.prisma.homeworkSubmission.update({
+    const updated = await this.prisma.homeworkSubmission.update({
       where: { id },
       data: {
         status: dto.status,
-        reason: dto.reason,
+        score: dto.score,
+        comment: dto.comment,
+        reason: dto.comment,
         checkedBy: user.sub,
         updatedAt: new Date(),
       },
       include: submissionInclude,
     });
+    return formatSubmission(updated);
   }
 }

@@ -17,6 +17,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtPayload } from '../../common/types/jwt-payload.type';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateAdminProfileDto } from './dto/update-profile.dto';
 
 export type Tokens = {
   accessToken: string;
@@ -169,6 +170,91 @@ export class AuthService {
         },
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getProfile(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        fullName: true,
+        username: true,
+        email: true,
+        phone: true,
+        image: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
+    });
+    if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
+    return user;
+  }
+
+  async updateProfile(
+    userId: number,
+    dto: UpdateAdminProfileDto,
+    image?: string,
+  ) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
+
+    if (dto.username && dto.username !== user.username) {
+      const usernameExists = await this.prisma.user.findUnique({
+        where: { username: dto.username },
+      });
+      if (usernameExists) {
+        throw new BadRequestException('Bu username allaqachon band');
+      }
+    }
+
+    if (dto.phone && dto.phone !== user.phone) {
+      const phoneExists = await this.prisma.user.findUnique({
+        where: { phone: dto.phone },
+      });
+      if (phoneExists) {
+        throw new BadRequestException('Bu telefon raqam allaqachon band');
+      }
+    }
+
+    const data: Record<string, unknown> = {
+      fullName: dto.fullName,
+      username: dto.username,
+      phone: dto.phone,
+      image,
+    };
+
+    if (dto.password) {
+      if (!dto.currentPassword) {
+        throw new BadRequestException('Joriy parol majburiy');
+      }
+      const currentPasswordMatches = await bcrypt.compare(
+        dto.currentPassword,
+        user.password,
+      );
+      if (!currentPasswordMatches) {
+        throw new BadRequestException("Joriy parol noto'g'ri");
+      }
+      data.password = await bcrypt.hash(dto.password, 10);
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: Object.fromEntries(
+        Object.entries(data).filter(([, value]) => value !== undefined),
+      ),
+      select: {
+        id: true,
+        fullName: true,
+        username: true,
+        email: true,
+        phone: true,
+        image: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
     });
   }
 

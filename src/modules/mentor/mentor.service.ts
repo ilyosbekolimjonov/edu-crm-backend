@@ -1,11 +1,13 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { HomeworkSubStatus } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../common/prisma/prisma.service';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateMentorProfileDto } from './dto/update-profile.dto';
 import { ReviewHomeworkDto } from './dto/review-homework.dto';
 import { AnswerQuestionDto } from './dto/answer-question.dto';
 
@@ -39,20 +41,85 @@ export class MentorService {
     return mentor;
   }
 
-  async updateProfile(userId: number, dto: UpdateProfileDto) {
-    await this.prisma.mentor.upsert({
-      where: { userId },
-      update: dto,
-      create: {
-        userId,
+  async updateProfile(
+    userId: number,
+    dto: UpdateMentorProfileDto,
+    image?: string,
+  ) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Foydalanuvchi topilmadi');
+
+    if (dto.username && dto.username !== user.username) {
+      const exists = await this.prisma.user.findUnique({
+        where: { username: dto.username },
+      });
+      if (exists) throw new ConflictException('Bu username allaqachon band');
+    }
+
+    if (dto.phone && dto.phone !== user.phone) {
+      const exists = await this.prisma.user.findUnique({
+        where: { phone: dto.phone },
+      });
+      if (exists)
+        throw new ConflictException('Bu telefon raqam allaqachon band');
+    }
+
+    const userData: Record<string, unknown> = {
+      fullName: dto.fullName,
+      username: dto.username,
+      phone: dto.phone,
+      image,
+    };
+
+    if (dto.password) {
+      if (!dto.currentPassword) {
+        throw new BadRequestException('Joriy parol majburiy');
+      }
+      const currentPasswordMatches = await bcrypt.compare(
+        dto.currentPassword,
+        user.password,
+      );
+      if (!currentPasswordMatches) {
+        throw new BadRequestException("Joriy parol noto'g'ri");
+      }
+      userData.password = await bcrypt.hash(dto.password, 10);
+    }
+
+    const mentorData = Object.fromEntries(
+      Object.entries({
         about: dto.about,
-        experience: dto.experience ?? 0,
+        experience: dto.experience,
         telegram: dto.telegram,
         linkedin: dto.linkedin,
-      },
+      }).filter(([, value]) => value !== undefined),
+    );
+
+    await this.prisma.$transaction(async (tx) => {
+      const filteredUserData = Object.fromEntries(
+        Object.entries(userData).filter(([, value]) => value !== undefined),
+      );
+
+      if (Object.keys(filteredUserData).length > 0) {
+        await tx.user.update({
+          where: { id: userId },
+          data: filteredUserData,
+        });
+      }
+
+      await tx.mentor.upsert({
+        where: { userId },
+        update: mentorData,
+        create: {
+          userId,
+          about: dto.about,
+          experience: dto.experience ?? 0,
+          telegram: dto.telegram,
+          linkedin: dto.linkedin,
+        },
+      });
     });
 
-    return { message: 'Profil muvaffaqiyatli yangilandi' };
+    return this.getProfile(userId);
   }
 
   async getCourses(userId: number) {
@@ -157,7 +224,10 @@ export class MentorService {
         homework: {
           lesson: {
             group: {
-              course: { mentorId: userId },
+              OR: [
+                { mentorId: userId },
+                { mentorAssignments: { some: { mentorId: userId } } },
+              ],
             },
           },
         },
@@ -203,7 +273,10 @@ export class MentorService {
         homework: {
           lesson: {
             group: {
-              course: { mentorId: userId },
+              OR: [
+                { mentorId: userId },
+                { mentorAssignments: { some: { mentorId: userId } } },
+              ],
             },
           },
         },
@@ -231,7 +304,7 @@ export class MentorService {
     });
 
     return {
-      message: `Topshiriq ${dto.status === 'APPROVED' ? 'qabul qilindi' : 'rad etildi'}`,
+      message: `Topshiriq ${dto.status === 'ACCEPTED' ? 'qabul qilindi' : 'rad etildi'}`,
     };
   }
 

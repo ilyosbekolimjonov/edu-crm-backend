@@ -59,6 +59,7 @@ export class CreateCourseDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(255)
   introVideo?: string;
 

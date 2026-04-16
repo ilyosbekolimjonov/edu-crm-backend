@@ -5,8 +5,10 @@ import {
   IsEmail,
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
+  Length,
   Matches,
   MaxLength,
   Min,
@@ -25,19 +27,22 @@ export class UpdateUserDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
-  @MinLength(2, {
-    message: "To'liq ism kamida 2 belgidan iborat bo'lishi kerak",
+  @IsNotEmpty()
+  @Length(3, 100, {
+    message: "To'liq ism 3 dan 100 tagacha belgidan iborat bo'lishi kerak",
   })
-  @MaxLength(80, { message: "To'liq ism 80 belgidan oshmasligi kerak" })
   fullName?: string;
 
   @ApiPropertyOptional({ example: 'ali_valiyev' })
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
+  @Length(3, 30, {
+    message: "Username 3 dan 30 tagacha belgidan iborat bo'lishi kerak",
+  })
   @Matches(USERNAME_REGEX, {
-    message:
-      "Username faqat harf, raqam, nuqta va pastki chiziqdan iborat bo'lishi kerak",
+    message: "Username bo'sh joysiz bo'lishi kerak",
   })
   username?: string;
 
@@ -45,14 +50,16 @@ export class UpdateUserDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsEmail()
+  @IsNotEmpty()
   email?: string;
 
   @ApiPropertyOptional({ example: '+998901234567' })
   @IsOptional()
   @Transform(({ value }) => normalizePhone(value))
   @IsString()
+  @IsNotEmpty()
   @Matches(PHONE_REGEX, {
-    message: "Telefon raqam faqat raqam va ixtiyoriy '+' bilan bo'lishi kerak",
+    message: "Telefon raqam +998XXXXXXXXX formatida bo'lishi kerak",
   })
   phone?: string;
 
@@ -63,6 +70,7 @@ export class UpdateUserDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @Matches(FILE_PATH_REGEX, { message: "Rasm manzili noto'g'ri formatda" })
   image?: string;
 
@@ -70,6 +78,7 @@ export class UpdateUserDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MinLength(6, { message: "Parol kamida 6 belgidan iborat bo'lishi kerak" })
   @MaxLength(128, { message: 'Parol 128 belgidan oshmasligi kerak' })
   password?: string;
@@ -83,6 +92,7 @@ export class UpdateUserDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MinLength(5, {
     message: "Mentor haqida matn kamida 5 belgidan iborat bo'lishi kerak",
   })
@@ -102,6 +112,7 @@ export class UpdateUserDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(255, { message: 'Telegram havolasi juda uzun' })
   telegram?: string;
 
@@ -109,6 +120,7 @@ export class UpdateUserDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(255, { message: 'LinkedIn havolasi juda uzun' })
   linkedin?: string;
 }

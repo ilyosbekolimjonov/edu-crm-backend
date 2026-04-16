@@ -8,6 +8,7 @@ import {
   IsDateString,
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
@@ -21,6 +22,7 @@ export class UpdateGroupDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MinLength(2)
   name?: string;
 
@@ -66,6 +68,7 @@ export class UpdateGroupDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @Matches(TIME_REGEX, { message: "Vaqt HH:mm formatida bo'lishi kerak" })
   startTime?: string;
 

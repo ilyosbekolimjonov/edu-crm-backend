@@ -17,21 +17,38 @@ export class LessonService {
   private async getGroupWithCourse(groupId: number) {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
-      include: { course: { select: { mentorId: true } } },
+      include: {
+        course: { select: { mentorId: true } },
+        mentorAssignments: { select: { mentorId: true } },
+      },
     });
     if (!group) throw new NotFoundException('Guruh topilmadi');
     return group;
   }
 
-  private checkMentorOwnership(mentorId: number, user: JwtPayload) {
-    if (user.role === UserRole.MENTOR && mentorId !== user.sub) {
+  private checkMentorGroupAccess(
+    group: {
+      mentorId: number;
+      mentorAssignments?: { mentorId: number }[];
+    },
+    user: JwtPayload,
+  ) {
+    if (user.role !== UserRole.MENTOR) return;
+
+    const allowed =
+      group.mentorId === user.sub ||
+      (group.mentorAssignments ?? []).some(
+        (item) => item.mentorId === user.sub,
+      );
+
+    if (!allowed) {
       throw new ForbiddenException('Bu kurs sizniki emas');
     }
   }
 
   async create(dto: CreateLessonDto, user: JwtPayload) {
     const group = await this.getGroupWithCourse(dto.groupId);
-    this.checkMentorOwnership(group.course.mentorId, user);
+    this.checkMentorGroupAccess(group, user);
 
     return this.prisma.lesson.create({
       data: {
@@ -44,14 +61,15 @@ export class LessonService {
     });
   }
 
-  async findByGroup(lessonGroupId: number, userId: number) {
-    await this.getGroupWithCourse(lessonGroupId);
+  async findByGroup(lessonGroupId: number, user: JwtPayload) {
+    const group = await this.getGroupWithCourse(lessonGroupId);
+    this.checkMentorGroupAccess(group, user);
     const lessons = await this.prisma.lesson.findMany({
       where: { groupId: lessonGroupId },
       include: {
         files: { select: { id: true, file: true, note: true } },
-        views: { where: { userId }, select: { view: true } },
-        homework: { select: { id: true, task: true } },
+        views: { where: { userId: user.sub }, select: { view: true } },
+        homework: { select: { id: true, task: true, file: true, createdAt: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -62,19 +80,25 @@ export class LessonService {
     }));
   }
 
-  async findOne(id: string, userId: number) {
+  async findOne(id: string, user: JwtPayload) {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id },
       include: {
-        group: { select: { id: true, name: true, courseId: true } },
+        group: {
+          include: {
+            course: { select: { mentorId: true } },
+            mentorAssignments: { select: { mentorId: true } },
+          },
+        },
         files: {
           select: { id: true, file: true, note: true, createdAt: true },
         },
-        views: { where: { userId }, select: { view: true } },
+        views: { where: { userId: user.sub }, select: { view: true } },
         homework: { select: { id: true, task: true, file: true } },
       },
     });
     if (!lesson) throw new NotFoundException('Dars topilmadi');
+    this.checkMentorGroupAccess(lesson.group, user);
     return {
       ...lesson,
       viewed: lesson.views[0]?.view ?? false,
@@ -86,11 +110,16 @@ export class LessonService {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id },
       include: {
-        group: { include: { course: { select: { mentorId: true } } } },
+        group: {
+          include: {
+            course: { select: { mentorId: true } },
+            mentorAssignments: { select: { mentorId: true } },
+          },
+        },
       },
     });
     if (!lesson) throw new NotFoundException('Dars topilmadi');
-    this.checkMentorOwnership(lesson.group.course.mentorId, user);
+    this.checkMentorGroupAccess(lesson.group, user);
 
     return this.prisma.lesson.update({
       where: { id },
@@ -102,11 +131,16 @@ export class LessonService {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id },
       include: {
-        group: { include: { course: { select: { mentorId: true } } } },
+        group: {
+          include: {
+            course: { select: { mentorId: true } },
+            mentorAssignments: { select: { mentorId: true } },
+          },
+        },
       },
     });
     if (!lesson) throw new NotFoundException('Dars topilmadi');
-    this.checkMentorOwnership(lesson.group.course.mentorId, user);
+    this.checkMentorGroupAccess(lesson.group, user);
 
     await this.prisma.lesson.delete({ where: { id } });
     return { message: "Dars o'chirildi" };
@@ -116,11 +150,16 @@ export class LessonService {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id },
       include: {
-        group: { include: { course: { select: { mentorId: true } } } },
+        group: {
+          include: {
+            course: { select: { mentorId: true } },
+            mentorAssignments: { select: { mentorId: true } },
+          },
+        },
       },
     });
     if (!lesson) throw new NotFoundException('Dars topilmadi');
-    this.checkMentorOwnership(lesson.group.course.mentorId, user);
+    this.checkMentorGroupAccess(lesson.group, user);
 
     return this.prisma.lessonFile.create({
       data: { file: dto.file, note: dto.note, lessonId: id },
@@ -133,14 +172,19 @@ export class LessonService {
       include: {
         lesson: {
           include: {
-            group: { include: { course: { select: { mentorId: true } } } },
+            group: {
+              include: {
+                course: { select: { mentorId: true } },
+                mentorAssignments: { select: { mentorId: true } },
+              },
+            },
           },
         },
       },
     });
     if (!file || file.lessonId !== id)
       throw new NotFoundException('Fayl topilmadi');
-    this.checkMentorOwnership(file.lesson.group.course.mentorId, user);
+    this.checkMentorGroupAccess(file.lesson.group, user);
 
     await this.prisma.lessonFile.delete({ where: { id: fileId } });
     return { message: "Fayl o'chirildi" };

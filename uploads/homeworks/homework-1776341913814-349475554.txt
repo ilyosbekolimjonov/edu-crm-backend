@@ -1,0 +1,113 @@
+Interview quessions
+
+1. Object bilan Map() o'rtasidagi farq,
+2. Arraydagi map va forEach o'rtasidagi farq,
+3. Promisda nechta state bor va ularni sanab bering.
+4. Primitive va Constractive tiplarni varqi nimada.
+5. Hoisting nima? va u qanday ishlaydi.
+6. Clasda abstraksiya nima? 
+7. Global va Local scopni tushuntirib bering.
+8. Call, Apply, Bind methodlarini tushuntirib bering va ular o'rtasidagi farqni ayting.
+9. class da static method va propertiylarni  to'lliq tushuntiring.
+10. var va let ni asosiy farqini tushuntirib bering.
+11. this nima? va u function declaration da qanday ishlaydi va arrow function da qanday ishlaydi.
+12. Pointerni tushuntiring.
+13. Class da constructor qachon ishga tushadi.
+14. execution context ni tushuntiring?
+15. ReferenceError qachon sodir bo'ladi.
+16. TypeError qachon sodir bo'ladi.
+17. libuv kutubxoansi nimaga kerak.
+18. Asinxron va Sinxron dasturlashni tushuntirib bering.
+19. Arrayning filter va find methodlarini farqini va qanday ishlashini tushuntiring.
+20. Arrayning slice va splice methodlarini asosiy farqi nimada.
+21. commonjs bilan ES module ni farqini tushuntiring.
+22. http ni va u nimaga kerak.
+23. funksiya turlarini sanab bering.
+24. Arrow funksiya bilan decloration fuknsiya o'rtasidagi farqlarni sanab bering.
+25. Winston kutubxonasi haqida gapirib bering.
+26. Data typelarni sanab bering.
+27. Undefined va Null ni nima farqi bor.
+28. Reduce methodini tushuntirib bering.
+29. Map and Set data type methodlarini sanab bering va qanday ishlashini tushuntiring.
+30. Destructuring nima? Uning qanday avfzalligi bor.
+31. Mixin nima?
+32. Objectning "assign" methodi nima vazifani bajaradi.
+33. DOM and DOM Tree?
+34. REST API?
+35. Promise bilan async/await nima farqi bor.
+36. Promiseni Methodlarini sanab bering.
+37. Promiseni race va all methodlarini farqi.
+38. TCP haqida gapirib bering.
+39. Git version control haqida gapiring.
+40. git yordamida oxrigi comentga qanday qaytamiz.
+41. git add qilishning necha xil yo'li bor va sanab bering.
+42. git orqali fileni qanday o'chiramiz.
+43. git orqali barcha commitlarni qanday ko'ramiz.
+44. git orqali istalgan commitni qanday ko'ramiz.
+45. Authentication Turlari.
+46. OTP va TOTP?
+47. OpenID?
+48. Identification, Authentication, and Authorization?
+49. Event loop nima vazifani bajaradi.
+50. OSI modeli nima va uni bilish nima uchun muhim.
+51. OSI modelini nechta qatlami bor, sanab bering.
+52. Thread nima?
+53. Transaction nima?
+54. ROLLBACK - bu nima?
+55. SAVEPOINT - bu nima?
+56. FOR UPDATE - bu nima?
+57. DEADLOCK - bu nima?
+58. Subquery turlari.
+59. EXISTS Subquery?
+60. Scalar Subquery?
+61. Multiple-row Subquery? qanday operatorlar ishlatiladi.
+62. Single-row Subquery? qanday operatorlar ishlatiladi.
+63. npm haqida gapirib bering.
+64. nodemon nima?
+65. NodeJs dagi global objectlarni sanab bering.
+66. NodeJs dagi built-in modullarni sanab bering.
+67. URL Module?
+68. HTTP Module?
+69. Serve static file?
+70. EJS Template?
+71. WebSocket?
+72. Relational Databases?
+73. SQl da "HAVING" comandasini vazifasi.
+74. SQL procedure and functions?
+75. SQL triggers?
+76. VDS serverlar haqida?
+77. REQ methodlarini sanab bering.
+78. RES methodlarini sanab bering.
+
+#NestJs quessions
+
+79. NestJS nima va u qanday ishlaydi?
+80. NestJSda module nima?
+81. Controller va Service o‘rtasidagi farq nima?
+82. NestJS-da dependency injection (DI) nima?
+83. Nest CLI nima va uning vazifasi?
+84. DTO va Validation qanday ishlaydi?
+85. Middleware nima va u qayerda ishlatiladi?
+86. Pipe nima va qanday ishlaydi?
+87. Interceptor nima va u nimaga kerak?
+88. Guard nima va qanday ishlaydi?
+89. Request lifecycle NestJS’da qanday ishlaydi?
+90. Custom Pipe va Interceptor yozganmisiz? Misol keltiring.
+91. NestJS-da CQRS patternini tushuntirib bering.
+92. Exception filter nima va qachon ishlatiladi?
+93. GraphQL bilan NestJSda qanday integratsiya qilinadi?
+94. Microservices NestJS’da qanday qo‘llaniladi?
+95. RabbitMQ nima va un nima vazifani bajaradi.
+96. Docker nima?
+97. Docker konteyner va virtual mashina (VM) o‘rtasidagi farq nima?
+98. Docker image nima?
+99. Docker container nima?
+100. Dockerfile nima va uning vazifasi?
+101. docker build va docker run o‘rtasidagi farq nima?
+102. docker ps va docker ps -a farqi nima?
+103. EXPOSE va -p bayroqlari farqi nima?
+104. Docker Compose nima?
+105. docker-compose up va docker-compose down nima qiladi?
+106. Docker volume nima? Qachon ishlatiladi?
+107. Stream nima? va nima uchun kerak,qanday loyihalarda qo'llaniladi.
+

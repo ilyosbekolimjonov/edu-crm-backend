@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { trimString } from '../../../common/validation/helpers';
 
 export class LoginDto {
@@ -17,5 +17,6 @@ export class LoginDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
+  @MinLength(6, { message: "Parol kamida 6 belgidan iborat bo'lishi kerak" })
   password: string;
 }

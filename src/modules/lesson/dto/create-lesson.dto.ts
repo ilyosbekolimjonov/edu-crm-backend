@@ -26,6 +26,7 @@ export class CreateLessonDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MinLength(5)
   @MaxLength(1000)
   about?: string;
@@ -37,6 +38,7 @@ export class CreateLessonDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(255)
   video?: string;
 

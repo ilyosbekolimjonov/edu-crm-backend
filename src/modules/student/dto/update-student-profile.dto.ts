@@ -1,14 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
-  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   Length,
   Matches,
   MaxLength,
-  Min,
   MinLength,
 } from 'class-validator';
 import {
@@ -18,7 +16,7 @@ import {
   USERNAME_REGEX,
 } from '../../../common/validation/helpers';
 
-export class UpdateMentorProfileDto {
+export class UpdateStudentProfileDto {
   @ApiPropertyOptional({ example: 'Ali Valiyev' })
   @IsOptional()
   @Transform(({ value }) => trimString(value))
@@ -63,36 +61,4 @@ export class UpdateMentorProfileDto {
   @MinLength(6)
   @MaxLength(128)
   password?: string;
-
-  @ApiPropertyOptional({ example: "Frontend va React bo'yicha mentor" })
-  @IsOptional()
-  @Transform(({ value }) => trimString(value))
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(5)
-  @MaxLength(500)
-  about?: string;
-
-  @ApiPropertyOptional({ example: 4, description: 'Tajriba (yil)' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  experience?: number;
-
-  @ApiPropertyOptional({ example: 'https://t.me/username' })
-  @IsOptional()
-  @Transform(({ value }) => trimString(value))
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
-  telegram?: string;
-
-  @ApiPropertyOptional({ example: 'https://linkedin.com/in/username' })
-  @IsOptional()
-  @Transform(({ value }) => trimString(value))
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
-  linkedin?: string;
 }

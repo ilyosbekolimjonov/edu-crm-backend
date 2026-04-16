@@ -96,11 +96,53 @@ export class HomeworkSubmissionController {
   @ApiParam({ name: 'id', type: Number })
   @ApiOperation({
     summary:
-      "Topshirilmani tekshirish: APPROVED / REJECTED (ADMIN, SUPERADMIN, MENTOR — o'z kursi)",
+      "Topshirilmani tekshirish: ACCEPTED / REJECTED (ADMIN, SUPERADMIN, MENTOR - o'z guruhlari)",
   })
   @ApiResponse({ status: 200, description: 'Tekshirildi' })
   @ApiResponse({ status: 403, description: 'Bu kurs sizniki emas' })
-  @ApiResponse({ status: 409, description: 'Allaqachon tekshirilgan' })
+  review(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ReviewSubmissionDto,
+    @GetCurrentUser() user: JwtPayload,
+  ) {
+    return this.service.review(id, dto, user);
+  }
+}
+
+@ApiTags('Homeworks')
+@Controller('homeworks')
+export class HomeworkSubmissionListController {
+  constructor(private readonly service: HomeworkSubmissionService) {}
+
+  @Get(':id/submissions')
+  @UseGuards(AtGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOperation({ summary: "Topshiriqqa yuborilgan javoblar ro'yxati" })
+  findByHomework(
+    @Param('id', ParseIntPipe) id: number,
+    @GetCurrentUser() user: JwtPayload,
+  ) {
+    return this.service.findByHomework(id, user);
+  }
+}
+
+@ApiTags('Submissions')
+@Controller('submissions')
+export class SubmissionReviewController {
+  constructor(private readonly service: HomeworkSubmissionService) {}
+
+  @Patch(':id/review')
+  @UseGuards(AtGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.MENTOR)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOperation({
+    summary:
+      "Topshirilmani score/comment bilan tekshirish (ADMIN, SUPERADMIN, MENTOR - o'z guruhlari)",
+  })
   review(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ReviewSubmissionDto,

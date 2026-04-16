@@ -117,9 +117,9 @@ export class LessonController {
   @ApiResponse({ status: 200, description: "Ro'yxat" })
   findByGroup(
     @Query('lessonGroupId', ParseIntPipe) lessonGroupId: number,
-    @GetCurrentUser('sub') userId: number,
+    @GetCurrentUser() user: JwtPayload,
   ) {
-    return this.service.findByGroup(lessonGroupId, userId);
+    return this.service.findByGroup(lessonGroupId, user);
   }
 
   @Get(':id')
@@ -129,8 +129,8 @@ export class LessonController {
   @ApiOperation({ summary: "Dars tafsiloti (fayllar, homework, ko'rilganlik)" })
   @ApiResponse({ status: 200, description: 'Dars tafsiloti' })
   @ApiResponse({ status: 404, description: 'Dars topilmadi' })
-  findOne(@Param('id') id: string, @GetCurrentUser('sub') userId: number) {
-    return this.service.findOne(id, userId);
+  findOne(@Param('id') id: string, @GetCurrentUser() user: JwtPayload) {
+    return this.service.findOne(id, user);
   }
 
   @Patch(':id')

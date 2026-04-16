@@ -9,23 +9,31 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import type { Express } from 'express';
+import { existsSync, mkdirSync } from 'fs';
+import { extname, join } from 'path';
 import { UserRole } from '@prisma/client';
 import { AtGuard } from '../auth/guards/at.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { GetCurrentUser } from '../../common/decorators/get-current-user.decorator';
 import { MentorService } from './mentor.service';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateMentorProfileDto } from './dto/update-profile.dto';
 import { ReviewHomeworkDto } from './dto/review-homework.dto';
 import { AnswerQuestionDto } from './dto/answer-question.dto';
 
@@ -50,7 +58,7 @@ export class MentorController {
   @ApiResponse({ status: 200, description: 'Profil yangilandi' })
   updateProfile(
     @GetCurrentUser('sub') userId: number,
-    @Body() dto: UpdateProfileDto,
+    @Body() dto: UpdateMentorProfileDto,
   ) {
     return this.mentorService.updateProfile(userId, dto);
   }
@@ -89,7 +97,7 @@ export class MentorController {
 
   @Patch('homeworks/:submissionId/review')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Homeworkni tekshirish (APPROVED / REJECTED)' })
+  @ApiOperation({ summary: 'Homeworkni tekshirish (ACCEPTED / REJECTED)' })
   @ApiParam({
     name: 'submissionId',
     type: Number,
@@ -172,5 +180,60 @@ export class MentorController {
     @Param('id', ParseIntPipe) courseId: number,
   ) {
     return this.mentorService.getCourseAnalytics(userId, courseId);
+  }
+}
+
+@ApiTags('Teacher')
+@ApiBearerAuth()
+@UseGuards(AtGuard, RolesGuard)
+@Roles(UserRole.MENTOR)
+@Controller('teacher')
+export class TeacherController {
+  constructor(private readonly mentorService: MentorService) {}
+
+  @Get('profile')
+  @ApiOperation({ summary: "Teacher o'z profilini ko'rish" })
+  @ApiResponse({ status: 200, description: 'Teacher profili' })
+  getProfile(@GetCurrentUser('sub') userId: number) {
+    return this.mentorService.getProfile(userId);
+  }
+
+  @Patch('profile')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          const uploadDir = join(process.cwd(), 'uploads', 'users');
+          if (!existsSync(uploadDir)) {
+            mkdirSync(uploadDir, { recursive: true });
+          }
+          cb(null, uploadDir);
+        },
+        filename: (_req, file, cb) => {
+          const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+          cb(null, `user-${unique}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (_req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+          cb(new Error('Faqat rasm fayl yuklash mumkin'), false);
+          return;
+        }
+        cb(null, true);
+      },
+      limits: { files: 1, fileSize: 10 * 1024 * 1024 },
+    }),
+  )
+  @HttpCode(HttpStatus.OK)
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Teacher profilini tahrirlash' })
+  @ApiResponse({ status: 200, description: 'Profil yangilandi' })
+  updateProfile(
+    @GetCurrentUser('sub') userId: number,
+    @Body() dto: UpdateMentorProfileDto,
+    @UploadedFile() image: Express.Multer.File | undefined,
+  ) {
+    const imageUrl = image ? `/uploads/users/${image.filename}` : undefined;
+    return this.mentorService.updateProfile(userId, dto, imageUrl);
   }
 }

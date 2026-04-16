@@ -1,15 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 import { trimString } from '../../../common/validation/helpers';
 
-export class AnswerQuestionDto {
-  @ApiProperty({
-    example:
-      'Async/await - bu Promise bilan ishlashni soddalashtiradigan sintaksis.',
-  })
+export class CreateStudentSubmissionDto {
+  @ApiProperty({ example: 'Topshiriq izohi va linklar' })
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
+  @MinLength(3)
+  @MaxLength(1000)
   text: string;
 }
