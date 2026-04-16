@@ -8,6 +8,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Length,
   Matches,
   MaxLength,
   Min,
@@ -26,19 +27,20 @@ export class RegisterDto {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
-  @MinLength(2, {
-    message: "To'liq ism kamida 2 belgidan iborat bo'lishi kerak",
+  @Length(3, 100, {
+    message: "To'liq ism 3 dan 100 tagacha belgidan iborat bo'lishi kerak",
   })
-  @MaxLength(80, { message: "To'liq ism 80 belgidan oshmasligi kerak" })
   fullName: string;
 
   @ApiProperty({ example: 'ali_valiyev', description: 'Foydalanuvchi nomi' })
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
+  @Length(3, 30, {
+    message: "Username 3 dan 30 tagacha belgidan iborat bo'lishi kerak",
+  })
   @Matches(USERNAME_REGEX, {
-    message:
-      "Username faqat harf, raqam, nuqta va pastki chiziqdan iborat bo'lishi kerak",
+    message: "Username bo'sh joysiz bo'lishi kerak",
   })
   username: string;
 
@@ -53,7 +55,7 @@ export class RegisterDto {
   @IsString()
   @IsNotEmpty()
   @Matches(PHONE_REGEX, {
-    message: "Telefon nomer faqat raqam va kamida 9 xonali bo'lishi kerak",
+    message: "Telefon raqam +998XXXXXXXXX formatida bo'lishi kerak",
   })
   phone: string;
 
@@ -64,6 +66,7 @@ export class RegisterDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @Matches(FILE_PATH_REGEX, { message: "Rasm manzili noto'g'ri formatda" })
   image?: string;
 
@@ -97,6 +100,7 @@ export class RegisterDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(255, { message: 'Telegram havolasi juda uzun' })
   telegram?: string;
 
@@ -107,6 +111,7 @@ export class RegisterDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MaxLength(255, { message: 'LinkedIn havolasi juda uzun' })
   linkedin?: string;
 
@@ -117,6 +122,7 @@ export class RegisterDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   @MinLength(5, {
     message: "Mentor haqida matn kamida 5 belgidan iborat bo'lishi kerak",
   })

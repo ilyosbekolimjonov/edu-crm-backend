@@ -30,7 +30,7 @@ enum PaidVia {
 
 enum HomeworkSubStatus {
   PENDING
-  APPROVED
+  ACCEPTED
   REJECTED
 }
 
@@ -230,6 +230,8 @@ model HomeworkSubmission {
   text      String?
   file      String
   reason    String?
+  score     Int?
+  comment   String?
   status    HomeworkSubStatus @default(PENDING)
   createdAt DateTime          @default(now())
   updatedAt DateTime?

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -12,6 +13,8 @@ import { GroupQueryDto } from './dto/group-query.dto';
 import { AddStudentDto } from './dto/add-student.dto';
 import { WeekDays } from '@prisma/client';
 import { SetAttendanceDto } from './dto/set-attendance.dto';
+import { BulkAttendanceDto } from './dto/bulk-attendance.dto';
+import type { JwtPayload } from '../../common/types/jwt-payload.type';
 
 function timeToMinutes(time: string): number {
   const [h, m] = time.split(':').map(Number);
@@ -34,6 +37,49 @@ function hasTimeOverlap(
 @Injectable()
 export class GroupService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private async assertAttendanceAccess(groupId: number, user?: JwtPayload) {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      include: {
+        mentorAssignments: { select: { mentorId: true } },
+      },
+    });
+    if (!group) throw new NotFoundException('Guruh topilmadi');
+
+    if (user?.role === UserRole.MENTOR) {
+      const allowed =
+        group.mentorId === user.sub ||
+        group.mentorAssignments.some((item) => item.mentorId === user.sub);
+      if (!allowed) {
+        throw new ForbiddenException("Bu guruh davomatiga ruxsatingiz yo'q");
+      }
+    }
+
+    return group;
+  }
+
+  private attendanceDateFromMonthDay(month: string, day: number) {
+    const [yearStr, monthStr] = month.split('-');
+    const year = Number(yearStr);
+    const monthNumber = Number(monthStr);
+    const daysInMonth = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+
+    if (
+      !Number.isInteger(year) ||
+      !Number.isInteger(monthNumber) ||
+      monthNumber < 1 ||
+      monthNumber > 12 ||
+      day < 1 ||
+      day > daysInMonth
+    ) {
+      throw new BadRequestException("Davomat sanasi noto'g'ri");
+    }
+
+    return new Date(
+      Date.UTC(year, monthNumber - 1, day, 0, 0, 0, 0),
+    );
+  }
 
   private async assertStudentAvailability(params: {
     userId: number;
@@ -278,13 +324,21 @@ export class GroupService {
     });
   }
 
-  async findAll(query: GroupQueryDto) {
+  async findAll(query: GroupQueryDto, user?: JwtPayload) {
     return this.prisma.group.findMany({
       where: {
         ...(query.status && { status: query.status }),
         ...(query.courseId && { courseId: query.courseId }),
         ...(query.mentorId && { mentorId: query.mentorId }),
         ...(query.roomId && { roomId: query.roomId }),
+        ...(user?.role === UserRole.MENTOR
+          ? {
+              OR: [
+                { mentorId: user.sub },
+                { mentorAssignments: { some: { mentorId: user.sub } } },
+              ],
+            }
+          : {}),
       },
       include: {
         course: { select: { id: true, name: true } },
@@ -310,7 +364,7 @@ export class GroupService {
     });
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, user?: JwtPayload) {
     const group = await this.prisma.group.findUnique({
       where: { id },
       include: {
@@ -336,6 +390,14 @@ export class GroupService {
       },
     });
     if (!group) throw new NotFoundException('Guruh topilmadi');
+    if (user?.role === UserRole.MENTOR) {
+      const allowed =
+        group.mentor.id === user.sub ||
+        group.mentorAssignments.some((item) => item.mentorId === user.sub);
+      if (!allowed) {
+        throw new ForbiddenException("Bu guruhga ruxsatingiz yo'q");
+      }
+    }
     return group;
   }
 
@@ -589,7 +651,8 @@ export class GroupService {
     return { message: "Guruh o'chirildi" };
   }
 
-  async getAttendance(groupId: number, month?: string) {
+  async getAttendance(groupId: number, month?: string, user?: JwtPayload) {
+    await this.assertAttendanceAccess(groupId, user);
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
       include: {
@@ -649,11 +712,68 @@ export class GroupService {
     };
   }
 
-  async setAttendance(groupId: number, dto: SetAttendanceDto) {
-    const group = await this.prisma.group.findUnique({
-      where: { id: groupId },
+  async bulkSaveAttendance(
+    groupId: number,
+    dto: BulkAttendanceDto,
+    user?: JwtPayload,
+  ) {
+    await this.assertAttendanceAccess(groupId, user);
+
+    const studentIds = Array.from(
+      new Set(dto.changes.map((change) => change.studentId)),
+    );
+    const memberships = await this.prisma.studentGroup.findMany({
+      where: { groupId, userId: { in: studentIds } },
+      select: { userId: true },
     });
-    if (!group) throw new NotFoundException('Guruh topilmadi');
+    const memberIds = new Set(memberships.map((item) => item.userId));
+    const invalidStudent = studentIds.find((id) => !memberIds.has(id));
+    if (invalidStudent) {
+      throw new NotFoundException('Talaba bu guruhga biriktirilmagan');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const change of dto.changes) {
+        const lessonDate = this.attendanceDateFromMonthDay(
+          dto.month,
+          change.day,
+        );
+        const where = {
+          groupId_userId_lessonDate: {
+            groupId,
+            userId: change.studentId,
+            lessonDate,
+          },
+        };
+
+        if (change.present === null) {
+          await tx.groupAttendance.deleteMany({
+            where: { groupId, userId: change.studentId, lessonDate },
+          });
+          continue;
+        }
+
+        await tx.groupAttendance.upsert({
+          where,
+          create: {
+            groupId,
+            userId: change.studentId,
+            lessonDate,
+            present: change.present,
+          },
+          update: { present: change.present },
+        });
+      }
+    });
+
+    return {
+      message: 'Davomat saqlandi',
+      saved: dto.changes.length,
+    };
+  }
+
+  async setAttendance(groupId: number, dto: SetAttendanceDto, user?: JwtPayload) {
+    await this.assertAttendanceAccess(groupId, user);
 
     const membership = await this.prisma.studentGroup.findUnique({
       where: { userId_groupId: { userId: dto.userId, groupId } },
@@ -684,7 +804,14 @@ export class GroupService {
     });
   }
 
-  async removeAttendance(groupId: number, userId: number, date: string) {
+  async removeAttendance(
+    groupId: number,
+    userId: number,
+    date: string,
+    user?: JwtPayload,
+  ) {
+    await this.assertAttendanceAccess(groupId, user);
+
     const lessonDate = new Date(date);
     if (Number.isNaN(lessonDate.getTime())) {
       throw new BadRequestException("Sana formati noto'g'ri");

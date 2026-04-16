@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiConsumes,
   ApiOperation,
   ApiQuery,
   ApiResponse,
@@ -38,6 +39,7 @@ import { RtGuard } from './guards/rt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { JwtPayloadWithRt } from '../../common/types/jwt-payload.type';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateAdminProfileDto } from './dto/update-profile.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -141,6 +143,55 @@ export class AuthController {
   @ApiResponse({ status: 200, description: "Foydalanuvchilar ro'yxati" })
   getUsers(@Query('role') role?: UserRole) {
     return this.authService.getUsers(role);
+  }
+
+  @Get('profile')
+  @UseGuards(AtGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "O'z profilini ko'rish (ADMIN, SUPERADMIN)" })
+  getProfile(@GetCurrentUser('sub') userId: number) {
+    return this.authService.getProfile(userId);
+  }
+
+  @Patch('profile')
+  @UseGuards(AtGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          const uploadDir = join(process.cwd(), 'uploads', 'users');
+          if (!existsSync(uploadDir)) {
+            mkdirSync(uploadDir, { recursive: true });
+          }
+          cb(null, uploadDir);
+        },
+        filename: (_req, file, cb) => {
+          const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+          cb(null, `user-${unique}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (_req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+          cb(new Error('Faqat rasm fayl yuklash mumkin'), false);
+          return;
+        }
+        cb(null, true);
+      },
+      limits: { files: 1, fileSize: 10 * 1024 * 1024 },
+    }),
+  )
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: "O'z profilini tahrirlash (ADMIN, SUPERADMIN)" })
+  updateProfile(
+    @Body() dto: UpdateAdminProfileDto,
+    @UploadedFile() image: Express.Multer.File | undefined,
+    @GetCurrentUser('sub') userId: number,
+  ) {
+    const imageUrl = image ? `/uploads/users/${image.filename}` : undefined;
+    return this.authService.updateProfile(userId, dto, imageUrl);
   }
 
   @Patch('users/:id')

@@ -1,9 +1,8 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsInt,
   IsNotEmpty,
-  IsOptional,
   IsString,
   Matches,
   MaxLength,
@@ -32,12 +31,11 @@ export class CreateSubmissionDto {
   @Matches(FILE_PATH_REGEX, { message: "Fayl manzili noto'g'ri formatda" })
   file: string;
 
-  @ApiPropertyOptional({ example: 'GitHub: https://github.com/user/project' })
-  @IsOptional()
+  @ApiProperty({ example: 'GitHub: https://github.com/user/project' })
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsNotEmpty()
   @MinLength(3)
   @MaxLength(1000)
-  text?: string;
+  text: string;
 }

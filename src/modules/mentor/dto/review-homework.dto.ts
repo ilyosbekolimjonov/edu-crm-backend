@@ -1,22 +1,26 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { trimString } from '../../../common/validation/helpers';
 
 export class ReviewHomeworkDto {
   @ApiProperty({
-    enum: ['APPROVED', 'REJECTED'],
-    example: 'APPROVED',
+    enum: ['ACCEPTED', 'REJECTED'],
+    example: 'ACCEPTED',
     description: 'Homework natijasi',
   })
-  @IsIn(['APPROVED', 'REJECTED'], {
-    message: "Status faqat APPROVED yoki REJECTED bo'lishi mumkin",
+  @IsIn(['ACCEPTED', 'REJECTED'], {
+    message: "Status faqat ACCEPTED yoki REJECTED bo'lishi mumkin",
   })
-  status: 'APPROVED' | 'REJECTED';
+  status: 'ACCEPTED' | 'REJECTED';
 
   @ApiPropertyOptional({
     example: "Yaxshi ishlandi, lekin yana bir nechta nuqtaga e'tibor bering",
     description: "Izoh (REJECTED bo'lganda majburiy)",
   })
   @IsOptional()
+  @Transform(({ value }) => trimString(value))
   @IsString()
+  @IsNotEmpty()
   reason?: string;
 }

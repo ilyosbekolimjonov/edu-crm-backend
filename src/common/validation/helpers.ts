@@ -1,5 +1,5 @@
-export const PHONE_REGEX = /^\+?\d{9,15}$/;
-export const USERNAME_REGEX = /^(?=.{3,32}$)[a-zA-Z0-9_.]+$/;
+export const PHONE_REGEX = /^\+998\d{9}$/;
+export const USERNAME_REGEX = /^\S+$/;
 export const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 export const FILE_PATH_REGEX = /^(https?:\/\/.+|\/uploads\/.+)$/i;
 
@@ -9,5 +9,6 @@ export function trimString(value: unknown) {
 
 export function normalizePhone(value: unknown) {
   if (typeof value !== 'string') return value;
-  return value.trim().replace(/[\s()-]/g, '');
+  const normalized = value.trim().replace(/[\s()-]/g, '');
+  return normalized.startsWith('998') ? `+${normalized}` : normalized;
 }
