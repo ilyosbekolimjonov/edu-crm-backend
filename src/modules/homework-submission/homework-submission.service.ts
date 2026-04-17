@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
+import { HomeworkSubStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { ReviewSubmissionDto } from './dto/review-submission.dto';
@@ -264,10 +264,13 @@ export class HomeworkSubmissionService {
       this.checkMentorGroupAccess(submission.homework.lesson.group, user);
     }
 
+    const status =
+      dto.score < 60 ? HomeworkSubStatus.REJECTED : HomeworkSubStatus.ACCEPTED;
+
     const updated = await this.prisma.homeworkSubmission.update({
       where: { id },
       data: {
-        status: dto.status,
+        status,
         score: dto.score,
         comment: dto.comment,
         reason: dto.comment,

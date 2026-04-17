@@ -8,7 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -429,17 +429,39 @@ export class AuthService {
     }
 
     if (user.role === UserRole.MENTOR) {
-      const mentorGroupsCount = await this.prisma.group.count({
-        where: { mentorId: id },
-      });
-      if (mentorGroupsCount > 0) {
+      const [primaryGroupsCount, assistingGroupsCount, coursesCount] =
+        await Promise.all([
+          this.prisma.group.count({ where: { mentorId: id } }),
+          this.prisma.groupMentor.count({ where: { mentorId: id } }),
+          this.prisma.course.count({ where: { mentorId: id } }),
+        ]);
+
+      if (primaryGroupsCount + assistingGroupsCount + coursesCount > 0) {
         throw new ConflictException(
-          "Bu o'qituvchiga bog'langan guruhlar bor, avval guruhlarni ajrating",
+          "Bu o'qituvchiga bog'langan kurs yoki guruhlar bor, avval ularni boshqa o'qituvchiga o'tkazing",
         );
       }
     }
 
-    await this.prisma.user.delete({ where: { id } });
+    try {
+      const result = await this.prisma.user.deleteMany({ where: { id } });
+      if (result.count === 0) {
+        throw new NotFoundException('Foydalanuvchi topilmadi');
+      }
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2003') {
+          throw new ConflictException(
+            "Foydalanuvchiga bog'langan ma'lumotlar bor, avval ularni ajrating",
+          );
+        }
+        if (error.code === 'P2025') {
+          throw new NotFoundException('Foydalanuvchi topilmadi');
+        }
+      }
+      throw error;
+    }
+
     return { message: "Foydalanuvchi o'chirildi" };
   }
 

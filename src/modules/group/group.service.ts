@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
@@ -647,7 +647,53 @@ export class GroupService {
   async remove(id: number) {
     const group = await this.prisma.group.findUnique({ where: { id } });
     if (!group) throw new NotFoundException('Guruh topilmadi');
-    await this.prisma.group.delete({ where: { id } });
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const lessons = await tx.lesson.findMany({
+          where: { groupId: id },
+          select: { id: true },
+        });
+        const lessonIds = lessons.map((lesson) => lesson.id);
+
+        await tx.lastActivity.updateMany({
+          where: { groupId: id },
+          data: { groupId: null },
+        });
+
+        if (lessonIds.length > 0) {
+          await tx.lastActivity.updateMany({
+            where: { lessonId: { in: lessonIds } },
+            data: { lessonId: null },
+          });
+          await tx.lesson.deleteMany({ where: { id: { in: lessonIds } } });
+        }
+
+        await tx.examResult.deleteMany({ where: { lessonGroupId: id } });
+        await tx.exam.deleteMany({ where: { lessonGroupId: id } });
+        await tx.groupAttendance.deleteMany({ where: { groupId: id } });
+        await tx.groupMentor.deleteMany({ where: { groupId: id } });
+        await tx.studentGroup.deleteMany({ where: { groupId: id } });
+
+        const result = await tx.group.deleteMany({ where: { id } });
+        if (result.count === 0) {
+          throw new NotFoundException('Guruh topilmadi');
+        }
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2003') {
+          throw new ConflictException(
+            "Guruhga bog'langan ma'lumotlar bor, avval ularni ajrating",
+          );
+        }
+        if (error.code === 'P2025') {
+          throw new NotFoundException('Guruh topilmadi');
+        }
+      }
+      throw error;
+    }
+
     return { message: "Guruh o'chirildi" };
   }
 

@@ -1,9 +1,10 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
@@ -142,7 +143,32 @@ export class LessonService {
     if (!lesson) throw new NotFoundException('Dars topilmadi');
     this.checkMentorGroupAccess(lesson.group, user);
 
-    await this.prisma.lesson.delete({ where: { id } });
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.lastActivity.updateMany({
+          where: { lessonId: id },
+          data: { lessonId: null },
+        });
+
+        const result = await tx.lesson.deleteMany({ where: { id } });
+        if (result.count === 0) {
+          throw new NotFoundException('Dars topilmadi');
+        }
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2003') {
+          throw new ConflictException(
+            "Darsga bog'langan ma'lumotlar bor, avval ularni ajrating",
+          );
+        }
+        if (error.code === 'P2025') {
+          throw new NotFoundException('Dars topilmadi');
+        }
+      }
+      throw error;
+    }
+
     return { message: "Dars o'chirildi" };
   }
 
