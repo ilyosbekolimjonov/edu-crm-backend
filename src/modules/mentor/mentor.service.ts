@@ -263,10 +263,6 @@ export class MentorService {
     submissionId: number,
     dto: ReviewHomeworkDto,
   ) {
-    if (dto.status === HomeworkSubStatus.REJECTED && !dto.reason) {
-      throw new BadRequestException('REJECTED holatida izoh (reason) majburiy');
-    }
-
     const submission = await this.prisma.homeworkSubmission.findFirst({
       where: {
         id: submissionId,
@@ -293,18 +289,25 @@ export class MentorService {
       throw new BadRequestException('Bu topshiriq allaqachon tekshirilgan');
     }
 
+    const status =
+      dto.score < 60 ? HomeworkSubStatus.REJECTED : HomeworkSubStatus.ACCEPTED;
+    const comment = dto.comment ?? dto.reason ?? null;
+
     await this.prisma.homeworkSubmission.update({
       where: { id: submissionId },
       data: {
-        status: dto.status as HomeworkSubStatus,
-        reason: dto.reason ?? null,
+        status,
+        score: dto.score,
+        comment,
+        reason: comment,
         checkedBy: userId,
         updatedAt: new Date(),
       },
     });
 
     return {
-      message: `Topshiriq ${dto.status === 'ACCEPTED' ? 'qabul qilindi' : 'rad etildi'}`,
+      status,
+      message: `Topshiriq ${status === HomeworkSubStatus.ACCEPTED ? 'qabul qilindi' : 'rad etildi'}`,
     };
   }
 

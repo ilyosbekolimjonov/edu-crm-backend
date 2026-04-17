@@ -12,12 +12,14 @@ import {
 import { trimString } from '../../../common/validation/helpers';
 
 export class ReviewSubmissionDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     enum: [HomeworkSubStatus.ACCEPTED, HomeworkSubStatus.REJECTED],
     example: HomeworkSubStatus.ACCEPTED,
+    description: 'Ignored by the API. Status is calculated from score.',
   })
+  @IsOptional()
   @IsIn([HomeworkSubStatus.ACCEPTED, HomeworkSubStatus.REJECTED])
-  status: HomeworkSubStatus;
+  status?: HomeworkSubStatus;
 
   @ApiProperty({ example: 85, minimum: 0, maximum: 100 })
   @Type(() => Number)
